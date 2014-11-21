@@ -52,8 +52,8 @@ void WeightedEuclideanLossLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>&
     const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
   for (int i = 0; i < 2; ++i) {
     if (propagate_down[i]) {
-      Dtype sign = (i == 0) ? -1. : 1.;
-      Dtype alpha = sign * top[0]->cpu_diff()[0] / bottom[i]->num();
+      // const Dtype sign = (i == 0) ? 1. : -1.;
+      const Dtype alpha = top[0]->cpu_diff()[0] / bottom[i]->num();
       caffe_cpu_gemv<Dtype>(CblasNoTrans, bottom[2]->channels(), bottom[2]->height(),
                             alpha, bottom[2]->cpu_data(), diff_.cpu_data(), 0.,
                             bottom[i]->mutable_cpu_data());

@@ -23,7 +23,7 @@ class WeightedEuclideanLossLayerTest : public MultiDeviceTest<TypeParam> {
   WeightedEuclideanLossLayerTest()
       : blob_bottom_data_(new Blob<Dtype>(10, 5, 1, 1)),
         blob_bottom_label_(new Blob<Dtype>(10, 5, 1, 1)),
-				blob_bottom_weights_(new Blob<Dtype>(10, 5, 5, 1)),
+        blob_bottom_weights_(new Blob<Dtype>(10, 5, 5, 1)),
         blob_top_loss_(new Blob<Dtype>()) {
     // fill the values
     FillerParameter filler_param;
@@ -32,14 +32,17 @@ class WeightedEuclideanLossLayerTest : public MultiDeviceTest<TypeParam> {
     blob_bottom_vec_.push_back(blob_bottom_data_);
     filler.Fill(this->blob_bottom_label_);
     blob_bottom_vec_.push_back(blob_bottom_label_);
-    filler.Fill(this->blob_bottom_weights_);
+    filler_param.set_min(0.1);
+    filler_param.set_max(2.0);
+    UniformFiller<Dtype> weights_filler(filler_param);
+    weights_filler.Fill(this->blob_bottom_weights_);
     blob_bottom_vec_.push_back(blob_bottom_weights_);
     blob_top_vec_.push_back(blob_top_loss_);
   }
   virtual ~WeightedEuclideanLossLayerTest() {
     delete blob_bottom_data_;
     delete blob_bottom_label_;
-		delete blob_bottom_weights_;
+    delete blob_bottom_weights_;
     delete blob_top_loss_;
   }
 
@@ -69,7 +72,7 @@ class WeightedEuclideanLossLayerTest : public MultiDeviceTest<TypeParam> {
 
   Blob<Dtype>* const blob_bottom_data_;
   Blob<Dtype>* const blob_bottom_label_;
-	Blob<Dtype>* const blob_bottom_weights_;
+  Blob<Dtype>* const blob_bottom_weights_;
   Blob<Dtype>* const blob_top_loss_;
   vector<Blob<Dtype>*> blob_bottom_vec_;
   vector<Blob<Dtype>*> blob_top_vec_;
