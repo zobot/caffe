@@ -22,10 +22,8 @@ void WeightedEuclideanLossLayer<Dtype>::Reshape(
 	CHECK_EQ(bottom[2]->num(), bottom[0]->num());
 	CHECK_EQ(bottom[2]->channels(), bottom[2]->height());
 	CHECK_EQ(bottom[2]->height(), bottom[0]->channels());
-  diff_.Reshape(bottom[0]->num(), bottom[0]->channels(),
-      bottom[0]->height(), bottom[0]->width());
-	temp_.Reshape(bottom[0]->num(), bottom[2]->channels(),
-			bottom[0]->height(), 1);
+  diff_.Reshape(bottom[0]->num(), bottom[0]->channels(), 1, 1);
+	temp_.Reshape(bottom[0]->num(), bottom[2]->channels(), 1, 1);
 }
 
 template <typename Dtype>
@@ -54,17 +52,17 @@ void WeightedEuclideanLossLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>&
     const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom) {
   for (int i = 0; i < 2; ++i) {
     if (propagate_down[i]) {
-      const Dtype sign = (i == 0) ? 1 : -1;
+      const Dtype sign = (i == 0) ? 1. : -1.;
       const Dtype alpha = sign * top[0]->cpu_diff()[0] / bottom[i]->num();
       caffe_cpu_gemv<Dtype>(CblasNoTrans, bottom[2]->channels(), bottom[2]->height(),
-                            1., bottom[2]->cpu_data(), diff_.cpu_data(), 0.,
-                            temp_.mutable_cpu_data());
-      caffe_cpu_axpby(
-          bottom[i]->count(),              // count
-          alpha,                              // alpha
-          temp_.cpu_data(),                   // a
-          Dtype(0),                           // beta
-          bottom[i]->mutable_cpu_diff());  // b
+                            alpha, bottom[2]->cpu_data(), diff_.cpu_data(), 0.,
+                            bottom[i]->mutable_cpu_data());
+      //caffe_cpu_axpby(
+      //    bottom[i]->count(),              // count
+      //    alpha,                              // alpha
+      //    temp_.cpu_data(),                   // a
+      //    Dtype(0),                           // beta
+      //    bottom[i]->mutable_cpu_diff());  // b
     }
   }
 }

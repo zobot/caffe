@@ -307,7 +307,7 @@ class EuclideanLossLayer : public LossLayer<Dtype> {
  *          E = \frac{1}{2N} \sum\limits_{n=1}^N (\hat{y}_n - y_n)^T * A *
  *          (\hat{y}_n - y_n) @f$ for real-valued regression tasks.
  *
- * @param bottom input Blob vector (length 2)
+ * @param bottom input Blob vector (length 3)
  *   -# @f$ (N \times C \times 1 \times 1) @f$
  *      the predictions @f$ \hat{y} \in [-\infty, +\infty]@f$
  *   -# @f$ (N \times C \times 1 \times 1) @f$
@@ -338,6 +338,10 @@ class WeightedEuclideanLossLayer : public LossLayer<Dtype> {
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
+	// WeightedEuclideanLossLayer takes 3 Blobs. The third should be the weights
+	// matrix for each data sample. In the future, there should be an option to
+	// load the weights matrix from a file specified by LayerParameter.
+  virtual inline int ExactNumBottomBlobs() const { return 3; }
   virtual inline LayerParameter_LayerType type() const {
     return LayerParameter_LayerType_WEIGHTED_EUCLIDEAN_LOSS;
   }
@@ -375,7 +379,7 @@ class WeightedEuclideanLossLayer : public LossLayer<Dtype> {
    *      (*Assuming that this top Blob is not used as a bottom (input) by any
    *      other layer of the Net.)
    * @param propagate_down see Layer::Backward.
-   * @param bottom input Blob vector (length 2)
+   * @param bottom input Blob vector (length 3)
    *   -# @f$ (N \times C \times H \times W) @f$
    *      the predictions @f$\hat{y}@f$; Backward fills their diff with
    *      gradients @f$
