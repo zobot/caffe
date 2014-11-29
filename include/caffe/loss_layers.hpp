@@ -174,8 +174,8 @@ class ContrastiveLossLayer : public LossLayer<Dtype> {
 
   /**
    * @brief Computes the Contrastive error gradient w.r.t. the inputs.
-   * 
-   * Computes the gradients with respect to the two input vectors (bottom[0] and 
+   *
+   * Computes the gradients with respect to the two input vectors (bottom[0] and
    * bottom[1]), but not the similarity label (bottom[2]).
    *
    * @param top output Blob vector (length 1), providing the error gradient with
@@ -194,7 +194,7 @@ class ContrastiveLossLayer : public LossLayer<Dtype> {
    *      the features @f$a@f$; Backward fills their diff with
    *      gradients if propagate_down[0]
    *   -# @f$ (N \times C \times 1 \times 1) @f$
-   *      the features @f$b@f$; Backward fills their diff with gradients if 
+   *      the features @f$b@f$; Backward fills their diff with gradients if
    *      propagate_down[1]
    */
   virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
@@ -349,9 +349,12 @@ class WeightedEuclideanLossLayer : public LossLayer<Dtype> {
   /**
    * Unlike most loss layers, in the WeightedEuclideanLossLayer we can backpropagate
    * to both inputs -- override to return true and always allow force_backward.
+   * However, it only has this ability on the first two blobs and there is
+   * currently no functionality to specify which bottom blobs you can force
+   * backward computation on.
    */
   virtual inline bool AllowForceBackward(const int bottom_index) const {
-    return true;
+    return bottom_index != 2;
   }
 
  protected:

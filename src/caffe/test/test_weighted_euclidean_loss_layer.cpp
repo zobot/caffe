@@ -80,9 +80,9 @@ class WeightedEuclideanLossLayerTest : public MultiDeviceTest<TypeParam> {
 
 TYPED_TEST_CASE(WeightedEuclideanLossLayerTest, TestDtypesAndDevices);
 
-// TYPED_TEST(WeightedEuclideanLossLayerTest, TestForward) {
-//   this->TestForward();
-// }
+TYPED_TEST(WeightedEuclideanLossLayerTest, TestForward) {
+  this->TestForward();
+}
 
 TYPED_TEST(WeightedEuclideanLossLayerTest, TestGradient) {
   typedef typename TypeParam::Dtype Dtype;
@@ -92,8 +92,12 @@ TYPED_TEST(WeightedEuclideanLossLayerTest, TestGradient) {
   WeightedEuclideanLossLayer<Dtype> layer(layer_param);
   layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
   GradientChecker<Dtype> checker(1e-2, 1e-2, 1701);
+  // Cchk the gradient for the first two bottom layers.
   checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
-      this->blob_top_vec_);
+      this->blob_top_vec_, 0);
+  checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_, 1);
 }
+
 
 }  // namespace caffe
