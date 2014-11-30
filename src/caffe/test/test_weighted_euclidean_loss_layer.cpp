@@ -32,9 +32,10 @@ class WeightedEuclideanLossLayerTest : public MultiDeviceTest<TypeParam> {
     blob_bottom_vec_.push_back(blob_bottom_data_);
     filler.Fill(this->blob_bottom_label_);
     blob_bottom_vec_.push_back(blob_bottom_label_);
-    filler_param.set_min(0.1);
-    filler_param.set_max(2.0);
-    UniformFiller<Dtype> weights_filler(filler_param);
+
+    // TODO - Fill this with a random *SYMMETRIC* matrix.
+    filler_param.set_value(1.7);
+    ConstantFiller<Dtype> weights_filler(filler_param);
     weights_filler.Fill(this->blob_bottom_weights_);
     blob_bottom_vec_.push_back(blob_bottom_weights_);
     blob_top_vec_.push_back(blob_top_loss_);
