@@ -1,0 +1,15 @@
+net: "examples/vgps/train_val.prototxt"
+solver_type: SGD
+test_iter: 1000
+test_interval: 2000
+base_lr: 0.1
+lr_policy: "step"
+gamma: 0.1
+stepsize: 12000
+display: 100
+max_iter: 48000
+#momentum: 0.9
+weight_decay: 0.005
+snapshot: 5000
+snapshot_prefix: "examples/vgps/train"
+solver_mode: CPU
