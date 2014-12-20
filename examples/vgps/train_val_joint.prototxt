@@ -6,7 +6,7 @@ layers {
   top: "loss_weights"
   top: "output_torques"
   hdf5_data_param {
-    source: "/home/cfinn/caffe/examples/vgps/train.txt"
+    source: "/home/cfinn/caffe/examples/vgps/train_joint.txt"
     batch_size: 100
   }
   include: { phase: TRAIN }
@@ -18,7 +18,7 @@ layers {
   top: "output_torques"
   top: "loss_weights"
   hdf5_data_param {
-    source: "/home/cfinn/caffe/examples/vgps/val.txt"
+    source: "/home/cfinn/caffe/examples/vgps/val_joint.txt"
     batch_size: 100
   }
   include: { phase: TEST }
