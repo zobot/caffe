@@ -10,25 +10,47 @@ template <typename Dtype>
 void MemoryDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
      const vector<Blob<Dtype>*>& top) {
   batch_size_ = this->layer_param_.memory_data_param().batch_size();
-  channels_ = this->layer_param_.memory_data_param().channels();
-  height_ = this->layer_param_.memory_data_param().height();
-  width_ = this->layer_param_.memory_data_param().width();
-  size_ = channels_ * height_ * width_;
-  CHECK_GT(batch_size_ * size_, 0) <<
+  channels1_ = this->layer_param_.memory_data_param().channels1();
+  channels2_ = this->layer_param_.memory_data_param().channels2();
+  channels3_ = this->layer_param_.memory_data_param().channels3();
+  channels4_ = this->layer_param_.memory_data_param().channels4();
+  height1_ = this->layer_param_.memory_data_param().height1();
+  height2_ = this->layer_param_.memory_data_param().height2();
+  height3_ = this->layer_param_.memory_data_param().height3();
+  height4_ = this->layer_param_.memory_data_param().height4();
+  width1_ = this->layer_param_.memory_data_param().width1();
+  width2_ = this->layer_param_.memory_data_param().width2();
+  width3_ = this->layer_param_.memory_data_param().width3();
+  width4_ = this->layer_param_.memory_data_param().width4();
+  size1_ = channels1_ * height1_ * width1_;
+  size2_ = channels2_ * height2_ * width2_;
+  size2_ = channels3_ * height3_ * width3_;
+  size3_ = channels4_ * height4_ * width4_;
+  CHECK_GT(batch_size_ * size1_, 0) <<
       "batch_size, channels, height, and width must be specified and"
       " positive in memory_data_param";
-  top[0]->Reshape(batch_size_, channels_, height_, width_);
-  top[1]->Reshape(batch_size_, 1, 1, 1);
-  added_data_.Reshape(batch_size_, channels_, height_, width_);
-  added_label_.Reshape(batch_size_, 1, 1, 1);
-  data_ = NULL;
-  labels_ = NULL;
-  added_data_.cpu_data();
-  added_label_.cpu_data();
+  top[0]->Reshape(batch_size_, channels1_, height1_, width1_);
+  top[1]->Reshape(batch_size_, channels2_, height2_, width2_);
+  top[2]->Reshape(batch_size_, channels3_, height3_, width3_);
+  top[3]->Reshape(batch_size_, channels4_, height4_, width4_);
+  added_data1_.Reshape(batch_size_, channels1_, height1_, width1_);
+  added_data2_.Reshape(batch_size_, channels2_, height2_, width2_);
+  added_data3_.Reshape(batch_size_, channels3_, height3_, width3_);
+  added_data4_.Reshape(batch_size_, channels4_, height4_, width4_);
+  data1_ = NULL;
+  data2_ = NULL;
+  data3_ = NULL;
+  data4_ = NULL;
+  added_data1_.cpu_data();
+  added_data2_.cpu_data();
+  added_data3_.cpu_data();
+  added_data4_.cpu_data();
 }
 
+// This could be useful later when we just want to add a few more samples.
+/*
 template <typename Dtype>
-void MemoryDataLayer<Dtype>::AddDatumVector(const vector<Datum>& datum_vector) {
+void MemoryDataLayer<Dtype>::AddDatumVector(const vector<Datum>& datum_vector, int index) {
   CHECK(!has_new_data_) <<
       "Can't add Datum when earlier ones haven't been consumed"
       << " by the upper layers";
@@ -49,14 +71,19 @@ void MemoryDataLayer<Dtype>::AddDatumVector(const vector<Datum>& datum_vector) {
   Reset(top_data, top_label, batch_size_);
   has_new_data_ = true;
 }
+*/
 
 template <typename Dtype>
-void MemoryDataLayer<Dtype>::Reset(Dtype* data, Dtype* labels, int n) {
-  CHECK(data);
-  CHECK(labels);
+void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, Dtype* data3, Dtype* data4, int n) {
+  CHECK(data1);
+  CHECK(data2);
+  CHECK(data3);
+  CHECK(data4);
   CHECK_EQ(n % batch_size_, 0) << "n must be a multiple of batch size";
-  data_ = data;
-  labels_ = labels;
+  data1_ = data1;
+  data2_ = data2;
+  data3_ = data3;
+  data4_ = data4;
   n_ = n;
   pos_ = 0;
 }
@@ -64,9 +91,11 @@ void MemoryDataLayer<Dtype>::Reset(Dtype* data, Dtype* labels, int n) {
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
-  CHECK(data_) << "MemoryDataLayer needs to be initalized by calling Reset";
-  top[0]->set_cpu_data(data_ + pos_ * size_);
-  top[1]->set_cpu_data(labels_ + pos_);
+  CHECK(data1_) << "MemoryDataLayer needs to be initalized by calling Reset";
+  top[0]->set_cpu_data(data1_ + pos_ * size1_);
+  top[1]->set_cpu_data(data2_ + pos_ * size2_);
+  top[2]->set_cpu_data(data3_ + pos_ * size3_);
+  top[3]->set_cpu_data(data4_ + pos_ * size4_);
   pos_ = (pos_ + batch_size_) % n_;
   has_new_data_ = false;
 }

@@ -578,9 +578,18 @@ message LRNParameter {
 // Message that stores parameters used by MemoryDataLayer
 message MemoryDataParameter {
   optional uint32 batch_size = 1;
-  optional uint32 channels = 2;
-  optional uint32 height = 3;
-  optional uint32 width = 4;
+  optional uint32 channels1 = 2 [default = 1];
+  optional uint32 channels2 = 5 [default = 1];
+  optional uint32 channels3 = 8 [default = 1];
+  optional uint32 channels4 = 11 [default = 1];
+  optional uint32 height1 = 3 [default = 1];
+  optional uint32 height2 = 6 [default = 1];
+  optional uint32 height3 = 9 [default = 1];
+  optional uint32 height4 = 12 [default = 1];
+  optional uint32 width1 = 4 [default = 1];
+  optional uint32 width2 = 7 [default = 1];
+  optional uint32 width3 = 10 [default = 1];
+  optional uint32 width4 = 13 [default = 1];
 }
 
 // Message that stores parameters used by MVNLayer

@@ -267,30 +267,37 @@ class MemoryDataLayer : public BaseDataLayer<Dtype> {
     return LayerParameter_LayerType_MEMORY_DATA;
   }
   virtual inline int ExactNumBottomBlobs() const { return 0; }
-  virtual inline int ExactNumTopBlobs() const { return 2; }
+  virtual inline int ExactNumTopBlobs() const { return 4; }
 
-  virtual void AddDatumVector(const vector<Datum>& datum_vector);
+  // virtual void AddDatumVector(const vector<Datum>& datum_vector);
 
   // Reset should accept const pointers, but can't, because the memory
   //  will be given to Blob, which is mutable
-  void Reset(Dtype* data, Dtype* label, int n);
+  void Reset(Dtype* data1, Dtype* data2, Dtype* data3, Dtype* data4, int n);
 
   int batch_size() { return batch_size_; }
-  int channels() { return channels_; }
-  int height() { return height_; }
-  int width() { return width_; }
+  // int channels() { return channels_; }
+  // int height() { return height_; }
+  // int width() { return width_; }
 
  protected:
   virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
-  int batch_size_, channels_, height_, width_, size_;
-  Dtype* data_;
-  Dtype* labels_;
+  int batch_size_, channels1_, height1_, width1_, size1_;
+  int channels2_, height2_, width2_, size2_;
+  int channels3_, height3_, width3_, size3_;
+  int channels4_, height4_, width4_, size4_;
+  Dtype* data1_;
+  Dtype* data2_;
+  Dtype* data3_;
+  Dtype* data4_;
   int n_;
   int pos_;
-  Blob<Dtype> added_data_;
-  Blob<Dtype> added_label_;
+  Blob<Dtype> added_data1_;
+  Blob<Dtype> added_data2_;
+  Blob<Dtype> added_data3_;
+  Blob<Dtype> added_data4_;
   bool has_new_data_;
 };
 
