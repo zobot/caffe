@@ -1,4 +1,4 @@
-net: "examples/vgps/train_val_images.prototxt"
+net: "examples/vgps/train_val_images_deep.prototxt"
 solver_type: SGD
 test_iter: 10
 test_interval: 2000

@@ -1,4 +1,4 @@
-net: "examples/vgps/train_val_images_small.prototxt"
+net: "examples/vgps/train_val_rgb.prototxt"
 solver_type: SGD
 test_iter: 10
 test_interval: 500
@@ -11,5 +11,5 @@ max_iter: 12000
 momentum: 0.9
 weight_decay: 0.005
 snapshot: 5000
-snapshot_prefix: "examples/vgps/snapshot/train_images_small"
+snapshot_prefix: "examples/vgps/snapshot/train_images_rgb"
 solver_mode: GPU
