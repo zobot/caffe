@@ -198,6 +198,8 @@ int test() {
 }
 RegisterBrewFunction(test);
 
+// Example Usage:
+// ./.build_release/tools/caffe forward -data examples/vgps/data/val_green.h5 -model examples/vgps/train_val_rawrgb.prototxt -weights examples/vgps/results/green.caffemodel
 // Forward: Run a forward pass.
 int forward() {
   CHECK_GT(FLAGS_model.size(), 0) << "Need a model definition to score.";
