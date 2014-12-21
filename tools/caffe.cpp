@@ -392,7 +392,7 @@ int time() {
       // so that we will notice Reshape performance bugs.
       layers[i]->Reshape(bottom_vecs[i], top_vecs[i]);
 
-      if (bottom_vecs[i].size() != 0) LOG(INFO) << "Layer "<<i<<", Params: "<<bottom_vecs[i][0]->count();
+      // if (bottom_vecs[i].size() != 0) LOG(INFO) << "Layer "<<i<<", Params: "<<bottom_vecs[i][0]->count();
       layers[i]->Forward(bottom_vecs[i], top_vecs[i]);
       forward_time_per_layer[i] += timer.MicroSeconds();
     }

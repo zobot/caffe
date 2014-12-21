@@ -7,7 +7,7 @@ layers {
   top: "output_torques"
   top: "rgb_frames"
   hdf5_data_param {
-    source: "/home/cfinn/caffe/examples/vgps/train_rgb.txt"
+    source: "examples/vgps/train_rgb.txt"
     batch_size: 100
   }
   include: { phase: TRAIN }
@@ -20,7 +20,7 @@ layers {
   top: "loss_weights"
   top: "rgb_frames"
   hdf5_data_param {
-    source: "/home/cfinn/caffe/examples/vgps/val_rgb.txt"
+    source: "examples/vgps/val_rgb.txt"
     batch_size: 100
   }
   include: { phase: TEST }
