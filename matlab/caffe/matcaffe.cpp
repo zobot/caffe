@@ -484,6 +484,7 @@ static void init_train(MEX_ARGS) {
     mxFree(model_file);
   }
 
+  // No idea what this is doing...
   init_key = random();  // NOLINT(caffe/random_fn)
   if (nlhs == 1) {
     plhs[0] = mxCreateDoubleScalar(init_key);
