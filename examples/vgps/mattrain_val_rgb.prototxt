@@ -16,35 +16,8 @@ layers {
     channels4: 7
     height4: 7
   }
+  include: { phase: TRAIN }
 }
-
-#layers {
-  # name: "data"
-  # type: HDF5_DATA
-  # top: "joint_states"
-  # top: "loss_weights"
-  # top: "output_torques"
-  # top: "rgb_frames"
-  # hdf5_data_param {
-    # source: "/home/cfinn/caffe/examples/vgps/train_rgb.txt"
-    # batch_size: 100
-  # }
-  # include: { phase: TRAIN }
-# }
-# layers {
-  # name: "data"
-  # type: HDF5_DATA
-  # top: "joint_states"
-  # top: "output_torques"
-  # top: "loss_weights"
-  # top: "rgb_frames"
-  # hdf5_data_param {
-    # source: "/home/cfinn/caffe/examples/vgps/val_rgb.txt"
-    # batch_size: 100
-  # }
-  # include: { phase: TEST }
-# }
-
 # Image Processing Layers
 layers {
   name: "conv1"
@@ -68,12 +41,14 @@ layers {
       value: 0
     }
   }
+  include: { phase: TRAIN }
 }
 layers {
   name: "relu1"
   type: RELU
   bottom: "conv1"
   top: "conv1"
+  include: { phase: TRAIN }
 }
 layers {
   name: "pool1"
@@ -85,6 +60,7 @@ layers {
     kernel_size: 3
     stride: 2
   }
+  include: { phase: TRAIN }
 }
 
 layers {
@@ -92,6 +68,7 @@ layers {
   type: SOFTMAX
   bottom: "pool1"
   top: "image_out"
+  include: { phase: TRAIN }
 }
 layers {
   name: "fc_images"
@@ -113,6 +90,7 @@ layers {
       value: 0
     }
   }
+  include: { phase: TRAIN }
 }
 
 # Concat image layers and joint states
@@ -122,6 +100,7 @@ layers {
   bottom: "joint_input"
   bottom: "image_features"
   top: "concat_img_joint"
+  include: { phase: TRAIN }
 }
 
 layers {
@@ -129,6 +108,7 @@ layers {
   type: RELU
   bottom: "concat_img_joint"
   top: "jirelu"
+  include: { phase: TRAIN }
 }
 layers {
   name: "fc1_both"
@@ -150,12 +130,14 @@ layers {
       value: 0
     }
   }
+  include: { phase: TRAIN }
 }
 layers {
   name: "relu2_both"
   type: RELU
   bottom: "fc1_both"
   top: "fc1relu_both"
+  include: { phase: TRAIN }
 }
 layers {
   name: "fc2_both"
@@ -177,6 +159,7 @@ layers {
       value: 0
     }
   }
+  include: { phase: TRAIN }
 }
 layers {
   name: "fc3_both"
@@ -198,6 +181,7 @@ layers {
       value: 0
     }
   }
+  include: { phase: TRAIN }
 }
 layers {
   name: "loss"
@@ -206,4 +190,5 @@ layers {
   bottom: "action_input"
   bottom: "prec_input"
   top: "euclidean_error"
+  include: { phase: TRAIN }
 }
