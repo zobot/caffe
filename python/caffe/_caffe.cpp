@@ -94,6 +94,7 @@ void PyNet::check_contiguous_array(PyArrayObject* arr, string name,
   }
 }
 
+/*
 void PyNet::set_input_arrays(bp::object data_obj, bp::object labels_obj) {
   // check that this network has an input MemoryDataLayer
   shared_ptr<MemoryDataLayer<float> > md_layer =
@@ -128,6 +129,7 @@ void PyNet::set_input_arrays(bp::object data_obj, bp::object labels_obj) {
       static_cast<float*>(PyArray_DATA(labels_arr)),
       PyArray_DIMS(data_arr)[0]);
 }
+*/
 
 PySGDSolver::PySGDSolver(const string& param_file) {
   // as in PyNet, (as a convenience, not a guarantee), create a Python
