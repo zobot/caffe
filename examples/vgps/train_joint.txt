@@ -1,1 +1,1 @@
-/home/cfinn/caffe/examples/vgps/data/train_green_joint.h5
+examples/vgps/data/train_green_joint.h5

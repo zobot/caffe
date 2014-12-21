@@ -1,1 +1,1 @@
-/home/cfinn/caffe/examples/vgps/data/val_green_joint.h5
+examples/vgps/data/val_green_joint.h5
