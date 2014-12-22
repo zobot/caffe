@@ -476,7 +476,7 @@ static void init_train(MEX_ARGS) {
   LOG(INFO) << "Read solver param from solver file";
 
   solver_.reset(GetSolver<float>(solver_param));
-  net_.reset(solver_->net().get());
+  net_ = solver_->net();
 
   if (nrhs == 2) {
     char* model_file = mxArrayToString(prhs[1]);
