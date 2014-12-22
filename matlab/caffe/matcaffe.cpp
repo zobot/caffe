@@ -123,7 +123,7 @@ static void vgps_train(const mxArray* const bottom) {
   const int dX = mxGetDimensions(joint)[0];
   const int dU = mxGetDimensions(action)[0];
   CHECK_EQ(channels, 3) << "Channel dimension incorrect";
-  CHECK_EQ(height, 240) << "Image height dimension incorrect";
+  CHECK_EQ(height, 227) << "Image height dimension incorrect";
   CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
   CHECK_EQ(dU, 7) << "Action dimension incorrect: " << dU;
 
@@ -144,22 +144,10 @@ static void vgps_train(const mxArray* const bottom) {
 
   shared_ptr<MemoryDataLayer<float> > md_layer =
     boost::dynamic_pointer_cast<MemoryDataLayer<float> >(net_->layers()[0]);
-  switch (Caffe::mode()) {
-  case Caffe::CPU:
-    md_layer->Reset(input_blobs[0]->mutable_cpu_data(),
-                    input_blobs[1]->mutable_cpu_data(),
-                    input_blobs[2]->mutable_cpu_data(),
-                    input_blobs[3]->mutable_cpu_data(), num_samples);
-    break;
-  case Caffe::GPU:
-    md_layer->Reset(input_blobs[0]->mutable_gpu_data(),
-                    input_blobs[1]->mutable_gpu_data(),
-                    input_blobs[2]->mutable_gpu_data(),
-                    input_blobs[3]->mutable_gpu_data(), num_samples);
-    break;
-  default:
-    LOG(FATAL) << "Unknown Caffe mode.";
-  }  // switch (Caffe::mode())
+  md_layer->Reset(input_blobs[0]->mutable_cpu_data(),
+                  input_blobs[1]->mutable_cpu_data(),
+                  input_blobs[2]->mutable_cpu_data(),
+                  input_blobs[3]->mutable_cpu_data(), num_samples);
 
   LOG(INFO) << "Starting Solve";
   solver_->Solve();
@@ -191,7 +179,7 @@ static mxArray* vgps_forward(const mxArray* const bottom) {
   const int dX = mxGetDimensions(joint)[0];
   const int dU = mxGetDimensions(action)[0];
   CHECK_EQ(channels, 3) << "Channel dimension incorrect";
-  CHECK_EQ(height, 240) << "Image height dimension incorrect";
+  CHECK_EQ(height, 227) << "Image height dimension incorrect";
   CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
   CHECK_EQ(dU, 7) << "Action dimension incorrect: " << dU;
 
@@ -265,7 +253,7 @@ static mxArray* vgps_forward_only(const mxArray* const bottom) {
   const int width = mxGetDimensions(rgb)[0];
   const int dX = mxGetDimensions(joint)[0];
   CHECK_EQ(channels, 3);
-  CHECK_EQ(height, 240);
+  CHECK_EQ(height, 227);
   CHECK_EQ(dX, 21);
 
   input_blobs[0] = shared_ptr<Blob<float> >(new Blob<float>());
