@@ -143,7 +143,7 @@ static void vgps_train(const mxArray* const bottom) {
   caffe_copy(input_blobs[3]->count(), prec_ptr, input_blobs[3]->mutable_cpu_data());
 
   shared_ptr<MemoryDataLayer<float> > md_layer =
-    boost::dynamic_pointer_cast<MemoryDataLayer<float> >(net_->layers()[0]);
+    boost::dynamic_pointer_cast<MemoryDataLayer<float> >(solver_->net()->layers()[0]);
   md_layer->Reset(input_blobs[0]->mutable_cpu_data(),
                   input_blobs[1]->mutable_cpu_data(),
                   input_blobs[2]->mutable_cpu_data(),
@@ -476,11 +476,11 @@ static void init_train(MEX_ARGS) {
   LOG(INFO) << "Read solver param from solver file";
 
   solver_.reset(GetSolver<float>(solver_param));
-  net_ = solver_->net();
+  //net_ = solver_->net();
 
   if (nrhs == 2) {
     char* model_file = mxArrayToString(prhs[1]);
-    net_->CopyTrainedLayersFrom(string(model_file));
+    solver_->net()->CopyTrainedLayersFrom(string(model_file));
     mxFree(model_file);
   }
 
@@ -625,6 +625,14 @@ static void read_mean(MEX_ARGS) {
     plhs[0] = mx_blob;
 }
 
+static void exitFunction(void) {
+  int nlhs, nrhs;
+  const mxArray **prhs;
+  mxArray **plhs;
+  reset(nlhs, plhs, nrhs, prhs);
+  mexUnlock();
+}
+
 /** -----------------------------------------------------------------
  ** Available commands.
  **/
@@ -667,6 +675,8 @@ void mexFunction(MEX_ARGS) {
     mexErrMsgTxt("An API command is requires");
     return;
   }
+
+  mexAtExit(exitFunction);
 
   { // Handle input command
     char *cmd = mxArrayToString(prhs[0]);
