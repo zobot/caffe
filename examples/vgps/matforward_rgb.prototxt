@@ -4,8 +4,8 @@ layers {
   type: MEMORY_DATA
   top: "rgb_input"
   top: "joint_input"
-  top: "action_input"
-  top: "prec_input"
+  top: "zzzzzzzzzz"
+  top: "zzzzzzzzz"
   memory_data_param {
     batch_size: 100
     channels1: 3
