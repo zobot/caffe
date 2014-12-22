@@ -9,8 +9,8 @@ layers {
   memory_data_param {
     batch_size: 100
     channels1: 3
-    width1: 227
-    height1: 227
+    width1: 240
+    height1: 240
     channels2: 21
     channels3: 7
     channels4: 7
