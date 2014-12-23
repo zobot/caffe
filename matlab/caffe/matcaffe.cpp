@@ -8,6 +8,8 @@
 
 #include "mex.h"
 
+#include "google/protobuf/text_format.h"
+
 #include "caffe/caffe.hpp"
 #include "caffe/data_layers.hpp"
 
@@ -298,6 +300,27 @@ static mxArray* vgps_forward_only(const mxArray* const bottom) {
   return mx_out;
 }
 
+// Returns cell array of protobuf string of the weights. *MUST BE CALLED AFTER TRAIN*
+static mxArray* get_weights_string() {
+  LOG(INFO) << "In get weights string";
+  NetParameter net_param;
+  solver_->net()->ToProto(&net_param, false);
+  LOG(INFO) << "In get weights string";
+  string proto_string;
+  google::protobuf::TextFormat::PrintToString(net_param, &proto_string);
+  LOG(INFO) << "In get weights string";
+  mxArray* mx_out = mxCreateCellMatrix(1, 1);
+  mwSize dims[1] = {proto_string.length()};
+  LOG(INFO) << "In get weights string";
+  mxArray* mx_proto_string =  mxCreateCharArray(1, dims);
+  mxSetCell(mx_out, 0, mx_proto_string);
+  LOG(INFO) << "In get weights string";
+  char* data_ptr = reinterpret_cast<char*>(mxGetPr(mx_proto_string));
+  LOG(INFO) << "In get weights string";
+  strcpy(data_ptr, proto_string.c_str());
+  LOG(INFO) << "In get weights string";
+  return mx_out;
+}
 
 static mxArray* do_backward(const mxArray* const top_diff) {
   vector<Blob<float>*>& output_blobs = net_->output_blobs();
@@ -426,6 +449,10 @@ static mxArray* do_get_weights() {
   }
 
   return mx_layers;
+}
+
+static void get_weights_string(MEX_ARGS) {
+  plhs[0] = get_weights_string();
 }
 
 static void get_weights(MEX_ARGS) {
@@ -656,6 +683,7 @@ static handler_registry handlers[] = {
   { "set_phase_test",     set_phase_test  },
   { "set_device",         set_device      },
   { "get_weights",        get_weights     },
+  { "get_weights_string", get_weights_string     },
   { "get_init_key",       get_init_key    },
   { "reset",              reset           },
   { "read_mean",          read_mean       },
