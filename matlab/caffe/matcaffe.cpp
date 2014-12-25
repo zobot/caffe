@@ -302,24 +302,25 @@ static mxArray* vgps_forward_only(const mxArray* const bottom) {
 
 // Returns cell array of protobuf string of the weights. *MUST BE CALLED AFTER TRAIN*
 static mxArray* get_weights_string() {
-  LOG(INFO) << "In get weights string";
   NetParameter net_param;
-  solver_->net()->ToProto(&net_param, false);
-  LOG(INFO) << "In get weights string";
+  net_->ToProto(&net_param, false);
   string proto_string;
   google::protobuf::TextFormat::PrintToString(net_param, &proto_string);
-  LOG(INFO) << "In get weights string";
   mxArray* mx_out = mxCreateCellMatrix(1, 1);
   mwSize dims[1] = {proto_string.length()};
-  LOG(INFO) << "In get weights string";
   mxArray* mx_proto_string =  mxCreateCharArray(1, dims);
   mxSetCell(mx_out, 0, mx_proto_string);
-  LOG(INFO) << "In get weights string";
   char* data_ptr = reinterpret_cast<char*>(mxGetPr(mx_proto_string));
-  LOG(INFO) << "In get weights string";
   strcpy(data_ptr, proto_string.c_str());
-  LOG(INFO) << "In get weights string";
   return mx_out;
+}
+
+static void set_weights_from_string(const mxArray* const proto_string) {
+  const mxArray* const proto = mxGetCell(proto_string, 0);
+  const char* const proto_char = reinterpret_cast<const char* const>(mxGetPr(proto));
+  NetParameter net_param;
+  google::protobuf::TextFormat::ParseFromString(string(proto_char), &net_param);
+  net_->CopyTrainedLayersFrom(net_param);
 }
 
 static mxArray* do_backward(const mxArray* const top_diff) {
@@ -459,6 +460,16 @@ static void get_weights(MEX_ARGS) {
   plhs[0] = do_get_weights();
 }
 
+static void set_weights(MEX_ARGS) {
+  if (nrhs != 1) {
+    LOG(ERROR) << "Only given " << nrhs << " arguments";
+    mexErrMsgTxt("Wrong number of arguments");
+  }
+
+  set_weights_from_string(prhs[0]);
+}
+
+
 static void set_mode_cpu(MEX_ARGS) {
   Caffe::set_mode(Caffe::CPU);
 }
@@ -503,7 +514,7 @@ static void init_train(MEX_ARGS) {
   LOG(INFO) << "Read solver param from solver file";
 
   solver_.reset(GetSolver<float>(solver_param));
-  //net_ = solver_->net();
+  net_ = solver_->net();
 
   if (nrhs == 2) {
     char* model_file = mxArrayToString(prhs[1]);
@@ -519,19 +530,21 @@ static void init_train(MEX_ARGS) {
 }
 
 static void init_test(MEX_ARGS) {
-  if (nrhs != 2) {
+  if (nrhs != 2 && nrhs != 1) {
     LOG(ERROR) << "Only given " << nrhs << " arguments";
     mexErrMsgTxt("Wrong number of arguments");
   }
 
   char* param_file = mxArrayToString(prhs[0]);
-  char* model_file = mxArrayToString(prhs[1]);
 
   net_.reset(new Net<float>(string(param_file)));
-  net_->CopyTrainedLayersFrom(string(model_file));
+  if (nrhs == 2) {
+    char* model_file = mxArrayToString(prhs[1]);
+    net_->CopyTrainedLayersFrom(string(model_file));
+    mxFree(model_file);
+  }
 
   mxFree(param_file);
-  mxFree(model_file);
 
   init_key = random();  // NOLINT(caffe/random_fn)
 
@@ -684,6 +697,7 @@ static handler_registry handlers[] = {
   { "set_device",         set_device      },
   { "get_weights",        get_weights     },
   { "get_weights_string", get_weights_string     },
+  { "set_weights",        set_weights     },
   { "get_init_key",       get_init_key    },
   { "reset",              reset           },
   { "read_mean",          read_mean       },
