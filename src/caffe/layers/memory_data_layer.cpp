@@ -109,7 +109,7 @@ void MemoryDataLayer<Dtype>::Reset(Dtype* data1, int n) {
   data1_ = data1;
   n_ = n;
   pos_ = 0;
-  num_data_ = 2;
+  num_data_ = 1;
 }
 
 template <typename Dtype>
@@ -117,7 +117,9 @@ void MemoryDataLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
   CHECK(data1_) << "MemoryDataLayer needs to be initalized by calling Reset";
   top[0]->set_cpu_data(data1_ + pos_ * size1_);
-  top[1]->set_cpu_data(data2_ + pos_ * size2_);
+  if (num_data_ > 1) {
+    top[1]->set_cpu_data(data2_ + pos_ * size2_);
+  }
   if (num_data_ == 4) {
     top[2]->set_cpu_data(data3_ + pos_ * size3_);
     top[3]->set_cpu_data(data4_ + pos_ * size4_);
