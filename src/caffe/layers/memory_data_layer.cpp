@@ -103,6 +103,16 @@ void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, int n) {
 }
 
 template <typename Dtype>
+void MemoryDataLayer<Dtype>::Reset(Dtype* data1, int n) {
+  CHECK(data1);
+  CHECK_EQ(n % batch_size_, 0) << "n must be a multiple of batch size";
+  data1_ = data1;
+  n_ = n;
+  pos_ = 0;
+  num_data_ = 2;
+}
+
+template <typename Dtype>
 void MemoryDataLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
   CHECK(data1_) << "MemoryDataLayer needs to be initalized by calling Reset";
