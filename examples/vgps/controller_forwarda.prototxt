@@ -7,7 +7,7 @@ layers {
   top: "zzzzzzzzzz"
   top: "zzzzzzzzz"
   memory_data_param {
-    batch_size: 100
+    batch_size: 1
     channels1: 3
     width1: 240
     height1: 240
