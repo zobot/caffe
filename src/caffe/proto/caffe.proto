@@ -41,6 +41,9 @@ message FillerParameter {
   // The expected number of non-zero input weights for a given output in
   // Gaussian filler -- the default -1 means don't perform sparsification.
   optional int32 sparse = 7 [default = -1];
+  optional int32 channels = 8 [default = -1];
+  optional int32 width = 9 [default = -1];
+  optional int32 height = 10 [default = -1];
 }
 
 message NetParameter {

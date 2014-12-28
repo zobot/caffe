@@ -126,6 +126,54 @@ class PositiveUnitballFiller : public Filler<Dtype> {
   }
 };
 
+/** @brief Fills a Blob with values @f$ x \in {0,x,y} @f$
+ */
+template <typename Dtype>
+class ImageXYFiller : public Filler<Dtype> {
+ public:
+  explicit ImageXYFiller(const FillerParameter& param)
+      : Filler<Dtype>(param) {}
+  virtual void Fill(Blob<Dtype>* blob) {
+    Dtype* data = blob->mutable_cpu_data();
+    DCHECK(blob->count());
+    int num_channels = this->filler_param_.channels();
+    int num_X = this->filler_param_.width();
+    int num_Y = this->filler_param_.height();
+
+    // Output dimension of fully connected layer should be twice the number of
+    // channels, and the input should be the dimension of input images..
+    CHECK_EQ(blob->height(), num_channels * 2) << 'Blob height' << blob->height();
+    CHECK_EQ(blob->width(), num_channels * num_X * num_Y) << blob->width() << ' != ' << num_channels*num_X*num_Y;
+    CHECK_EQ(blob->num(), 1);
+    CHECK_EQ(blob->channels(), 1);
+
+    for (int c = 0; c < num_channels; ++c) {
+      // One for each feature map.
+      for (int x = 0; x < num_X; ++x) {
+        for (int y = 0; y < num_Y; ++y) {
+          // Iterature over all params for this input point.
+          for (int k = 0; k < blob->height(); ++k) {
+            Dtype* weight_ptr = data + blob->offset(1,1,k, x*y*c);
+            if (c*2 == k) {
+              weight_ptr[0] = Dtype(x);
+            } else if (c*2+1 == k) {
+              weight_ptr[0] = Dtype(y);
+            } else {
+              weight_ptr[0] = Dtype(0);
+            }
+          }
+        }
+      }
+    }
+
+
+    // We expect the filler to not be called very frequently, so we will
+    // just use a simple implementation
+    CHECK_EQ(this->filler_param_.sparse(), -1)
+         << "Sparsity not supported by this Filler.";
+  }
+};
+
 /**
  * @brief Fills a Blob with values @f$ x \sim U(-a, +a) @f$ where @f$ a @f$
  *        is set inversely proportional to the number of incoming nodes.
@@ -177,6 +225,8 @@ Filler<Dtype>* GetFiller(const FillerParameter& param) {
     return new UniformFiller<Dtype>(param);
   } else if (type == "xavier") {
     return new XavierFiller<Dtype>(param);
+  } else if (type == "imagexy") {
+    return new ImageXYFiller<Dtype>(param);
   } else {
     CHECK(false) << "Unknown filler name: " << param.type();
   }
