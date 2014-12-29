@@ -175,7 +175,7 @@ BOOST_PYTHON_MODULE(_caffe) {
       .add_property("input_scale",  &PyNet::input_scale_)
       .add_property("raw_scale",    &PyNet::raw_scale_)
       .add_property("channel_swap", &PyNet::channel_swap_)
-      .def("_set_input_arrays",     &PyNet::set_input_arrays)
+//      .def("_set_input_arrays",     &PyNet::set_input_arrays)
       .def("save",                  &PyNet::save);
 
   bp::class_<PyBlob<float>, PyBlobWrap>(

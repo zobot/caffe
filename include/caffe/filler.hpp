@@ -127,6 +127,8 @@ class PositiveUnitballFiller : public Filler<Dtype> {
 };
 
 /** @brief Fills a Blob with values @f$ x \in {0,x,y} @f$
+ * such that the output of the layer is the weighted average
+ * x and y coordinate for each input channel.
  */
 template <typename Dtype>
 class ImageXYFiller : public Filler<Dtype> {
@@ -142,8 +144,8 @@ class ImageXYFiller : public Filler<Dtype> {
 
     // Output dimension of fully connected layer should be twice the number of
     // channels, and the input should be the dimension of input images..
-    CHECK_EQ(blob->height(), num_channels * 2) << 'Blob height' << blob->height();
-    CHECK_EQ(blob->width(), num_channels * num_X * num_Y) << blob->width() << ' != ' << num_channels*num_X*num_Y;
+    CHECK_EQ(blob->height(), num_channels * 2) << "Blob height: " << blob->height();
+    CHECK_EQ(blob->width(), num_channels * num_X * num_Y) << blob->width() << " != " << num_channels*num_X*num_Y;
     CHECK_EQ(blob->num(), 1);
     CHECK_EQ(blob->channels(), 1);
 
@@ -152,12 +154,14 @@ class ImageXYFiller : public Filler<Dtype> {
       for (int x = 0; x < num_X; ++x) {
         for (int y = 0; y < num_Y; ++y) {
           // Iterature over all params for this input point.
+          // std::cout << "Channel: " << c << ", X: " << x << ", Y: " << y << "\n";
           for (int k = 0; k < blob->height(); ++k) {
-            Dtype* weight_ptr = data + blob->offset(1,1,k, x*y*c);
+            Dtype* weight_ptr = data + blob->offset(0,0,k, x*y*c);
             if (c*2 == k) {
-              weight_ptr[0] = Dtype(x);
+              if (x==0 && y==0) std::cout << "Setting x for input channel " << c << "\n";
+              weight_ptr[0] = 2*(Dtype(x+1) / Dtype(num_X) - Dtype(0.5));
             } else if (c*2+1 == k) {
-              weight_ptr[0] = Dtype(y);
+              weight_ptr[0] = 2*(Dtype(y+1) / Dtype(num_Y) - Dtype(0.5));
             } else {
               weight_ptr[0] = Dtype(0);
             }
