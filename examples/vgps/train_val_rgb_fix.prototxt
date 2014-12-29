@@ -8,7 +8,7 @@ layers {
   top: "rgb_frames"
   hdf5_data_param {
     source: "examples/vgps/train_9tgt_shuff.txt"
-    batch_size: 50
+    batch_size: 100
   }
   include: { phase: TRAIN }
 }
