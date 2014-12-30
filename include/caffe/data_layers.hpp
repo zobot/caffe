@@ -277,9 +277,7 @@ class MemoryDataLayer : public BaseDataLayer<Dtype> {
   // Reset should accept const pointers, but can't, because the memory
   //  will be given to Blob, which is mutable
   void Reset(Dtype* data1, Dtype* data2, Dtype* data3, Dtype* data4, int n);
-
-  // Reset should accept const pointers, but can't, because the memory
-  //  will be given to Blob, which is mutable
+  void Reset(Dtype* data1, Dtype* data2, Dtype* data3, int n);
   void Reset(Dtype* data1, Dtype* data2, int n);
   void Reset(Dtype* data1, int n);
 

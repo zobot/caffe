@@ -91,6 +91,20 @@ void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, Dtype* data3, Dty
 }
 
 template <typename Dtype>
+void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, Dtype* data3, int n) {
+  CHECK(data1);
+  CHECK(data2);
+  CHECK(data3);
+  CHECK_EQ(top_size_, 3);
+  CHECK_EQ(n % batch_size_, 0) << "n must be a multiple of batch size";
+  data1_ = data1;
+  data2_ = data2;
+  data3_ = data3;
+  n_ = n;
+  pos_ = 0;
+}
+
+template <typename Dtype>
 void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, int n) {
   CHECK(data1);
   CHECK(data2);
