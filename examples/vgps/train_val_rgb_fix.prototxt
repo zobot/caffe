@@ -34,7 +34,7 @@ layers {
   top: "conv1"
   blobs_lr: 1
   blobs_lr: 2
-  weight_decay: 1
+  weight_decay: 0
   weight_decay: 0
   convolution_param {
     num_output: 32
@@ -63,7 +63,7 @@ layers {
   top: "conv2"
   blobs_lr: 1
   blobs_lr: 2
-  weight_decay: 1
+  weight_decay: 0
   weight_decay: 0
   convolution_param {
     num_output: 32
@@ -90,6 +90,9 @@ layers {
   type: SOFTMAX
   bottom: "conv2"
   top: "image_out"
+  softmax_param {
+    temperature: 1.0
+  }
 }
 layers {
   name: "fc_images"
@@ -171,6 +174,12 @@ layers {
       value: 0
     }
   }
+}
+layers {
+  name: "relu3_both"
+  type: RELU
+  bottom: "fc2_both"
+  top: "fc2_both"
 }
 layers {
   name: "fc3_both"
