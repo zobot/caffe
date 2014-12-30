@@ -107,6 +107,8 @@ void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   kernel_channel_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
       CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
       scale_data);
+  // divide by temperature
+  caffe_gpu_scal<Dtype>(num*spatial_dim*channels, temp_, top_data);
   // exponentiate
   // NOLINT_NEXT_LINE(whitespace/operators)
   kernel_exp<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),

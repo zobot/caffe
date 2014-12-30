@@ -688,6 +688,7 @@ message SoftmaxParameter {
     CUDNN = 2;
   }
   optional Engine engine = 1 [default = DEFAULT];
+  optional float temperature = 2 [default = 1.0];
 }
 
 // Message that stores parameters used by TanHLayer
