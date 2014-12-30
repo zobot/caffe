@@ -537,6 +537,9 @@ static void init_test(MEX_ARGS) {
 
   char* param_file = mxArrayToString(prhs[0]);
 
+  if (solver_) {
+    solver_.reset();
+  }
   net_.reset(new Net<float>(string(param_file)));
   if (nrhs == 2) {
     char* model_file = mxArrayToString(prhs[1]);
