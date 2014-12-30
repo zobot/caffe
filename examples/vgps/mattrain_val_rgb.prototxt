@@ -115,8 +115,8 @@ layers {
   type: INNER_PRODUCT
   bottom: "jirelu"
   top: "fc1_both"
-  blobs_lr: 5
-  blobs_lr: 10
+  blobs_lr: 2
+  blobs_lr: 4
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
@@ -144,8 +144,8 @@ layers {
   type: INNER_PRODUCT
   bottom: "fc1relu_both"
   top: "fc2_both"
-  blobs_lr: 5
-  blobs_lr: 10
+  blobs_lr: 2
+  blobs_lr: 4
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
@@ -166,8 +166,8 @@ layers {
   type: INNER_PRODUCT
   bottom: "fc2_both"
   top: "nn_output"
-  blobs_lr: 5
-  blobs_lr: 10
+  blobs_lr: 2
+  blobs_lr: 4
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
