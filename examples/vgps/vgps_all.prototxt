@@ -1,0 +1,232 @@
+name: "JointAndImageStateRegressionNet"
+layers {
+  name: "data_in"
+  type: MEMORY_DATA
+  top: "rgb_input"
+  top: "joint_input"
+  top: "action_input"
+  top: "prec_input"
+  memory_data_param {
+    batch_size: 100
+    channels1: 3
+    width1: 240
+    height1: 240
+    channels2: 21
+    channels3: 7
+    channels4: 7
+    height4: 7
+  }
+  include: { phase: TRAIN }
+}
+layers {
+  name: "data_in"
+  type: MEMORY_DATA
+  top: "rgb_input"
+  top: "joint_input"
+  memory_data_param {
+    batch_size: 100
+    channels1: 3
+    width1: 240
+    height1: 240
+    channels2: 21
+  }
+  include: { phase: TEST }
+}
+layers {
+  name: "data_in"
+  type: MEMORY_DATA
+  top: "rgb_input"
+  memory_data_param {
+    batch_size: 1
+    channels1: 3
+    width1: 240
+    height1: 240
+  }
+  include: { phase: FORWARDA }
+}
+layers {
+  name: "data_in"
+  type: MEMORY_DATA
+  top: "image_features"
+  top: "joint_input"
+  memory_data_param {
+    batch_size: 1
+    channels1: 40
+    channels2: 21
+  }
+  include: { phase: FORWARDB }
+}
+# Image Processing Layers
+layers {
+  name: "conv1"
+  type: CONVOLUTION
+  bottom: "rgb_input"
+  top: "conv1"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  convolution_param {
+    num_output: 32
+    kernel_size: 11
+    stride: 4
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  exclude: { phase: FORWARDB }
+}
+layers {
+  name: "relu1"
+  type: RELU
+  bottom: "conv1"
+  top: "conv1"
+  exclude: { phase: FORWARDB }
+}
+layers {
+  name: "pool1"
+  type: POOLING
+  bottom: "conv1"
+  top: "pool1"
+  pooling_param {
+    pool: MAX
+    kernel_size: 3
+    stride: 2
+  }
+  exclude: { phase: FORWARDB }
+}
+
+layers {
+  name: "softmax"
+  type: SOFTMAX
+  bottom: "pool1"
+  top: "image_out"
+  exclude: { phase: FORWARDB }
+}
+layers {
+  name: "fc_images"
+  type: INNER_PRODUCT
+  bottom: "image_out"
+  top: "image_features"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 40
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  exclude: { phase: FORWARDB }
+}
+
+# Concat image layers and joint states
+layers {
+  name: "concat_img_joint"
+  type: CONCAT
+  bottom: "joint_input"
+  bottom: "image_features"
+  top: "concat_img_joint"
+  exclude: { phase: FORWARDA }
+}
+
+layers {
+  name: "relu_both"
+  type: RELU
+  bottom: "concat_img_joint"
+  top: "jirelu"
+  exclude: { phase: FORWARDA }
+}
+layers {
+  name: "fc1_both"
+  type: INNER_PRODUCT
+  bottom: "jirelu"
+  top: "fc1_both"
+  blobs_lr: 2
+  blobs_lr: 4
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 40
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  exclude: { phase: FORWARDA }
+}
+layers {
+  name: "relu2_both"
+  type: RELU
+  bottom: "fc1_both"
+  top: "fc1relu_both"
+  exclude: { phase: FORWARDA }
+}
+layers {
+  name: "fc2_both"
+  type: INNER_PRODUCT
+  bottom: "fc1relu_both"
+  top: "fc2_both"
+  blobs_lr: 2
+  blobs_lr: 4
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 40
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  exclude: { phase: FORWARDA }
+}
+layers {
+  name: "fc3_both"
+  type: INNER_PRODUCT
+  bottom: "fc2_both"
+  top: "nn_output"
+  blobs_lr: 2
+  blobs_lr: 4
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 7
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  exclude: { phase: FORWARDA }
+}
+layers {
+  name: "loss"
+  type: WEIGHTED_EUCLIDEAN_LOSS
+  bottom: "nn_output"
+  bottom: "action_input"
+  bottom: "prec_input"
+  top: "euclidean_error"
+  include: { phase: TRAIN }
+}
