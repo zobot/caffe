@@ -180,6 +180,8 @@ message SolverState {
 enum Phase {
    TRAIN = 0;
    TEST = 1;
+   FORWARDA = 2;
+   FORWARDB = 3;
 }
 
 message NetState {
