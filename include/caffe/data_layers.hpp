@@ -293,7 +293,7 @@ class MemoryDataLayer : public BaseDataLayer<Dtype> {
       const vector<Blob<Dtype>*>& top);
 
   int batch_size_, channels1_, height1_, width1_, size1_;
-  int num_data_;
+  int top_size_;
   int channels2_, height2_, width2_, size2_;
   int channels3_, height3_, width3_, size3_;
   int channels4_, height4_, width4_, size4_;
