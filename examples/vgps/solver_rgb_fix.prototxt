@@ -1,6 +1,6 @@
 net: "examples/vgps/train_val_rgb_fix.prototxt"
 solver_type: SGD
-test_iter: 60
+test_iter: 120
 test_interval: 500
 base_lr: 0.0005
 lr_policy: "step"
