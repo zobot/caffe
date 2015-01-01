@@ -154,11 +154,9 @@ class ImageXYFiller : public Filler<Dtype> {
       for (int x = 0; x < num_X; ++x) {
         for (int y = 0; y < num_Y; ++y) {
           // Iterature over all params for this input point.
-          // std::cout << "Channel: " << c << ", X: " << x << ", Y: " << y << "\n";
           for (int k = 0; k < blob->height(); ++k) {
             Dtype* weight_ptr = data + blob->offset(0,0,k, x*y*c);
             if (c*2 == k) {
-              if (x==0 && y==0) std::cout << "Setting x for input channel " << c << "\n";
               weight_ptr[0] = 2*(Dtype(x+1) / Dtype(num_X) - Dtype(0.5));
             } else if (c*2+1 == k) {
               weight_ptr[0] = 2*(Dtype(y+1) / Dtype(num_Y) - Dtype(0.5));
