@@ -34,5 +34,7 @@ cat $ROBOT_B_HEAD $JOINT_NET $ROBOT_B_FOOT > $ROBOT_B
 # Copy the files to the robot
 echo "Copying network to brett1"
 scp $ROBOT_A $ROBOT_B svlevine@brett1:~/
+cp $ROBOT_A ~/
+cp $ROBOT_B ~/
 
 
