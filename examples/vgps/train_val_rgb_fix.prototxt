@@ -8,7 +8,7 @@ layers {
   top: "rgb_frames"
   hdf5_data_param {
     source: "examples/vgps/train_9tgt_shuff.txt"
-    batch_size: 100
+    batch_size: 25
   }
   include: { phase: TRAIN }
 }
@@ -21,7 +21,7 @@ layers {
   top: "rgb_frames"
   hdf5_data_param {
     source: "examples/vgps/val_9tgt_shuff.txt"
-    batch_size: 50
+    batch_size: 25
   }
   include: { phase: TEST }
 }
@@ -34,7 +34,7 @@ layers {
   top: "conv1"
   blobs_lr: 1
   blobs_lr: 2
-  weight_decay: 1
+  weight_decay: 0
   weight_decay: 0
   convolution_param {
     num_output: 32
@@ -63,7 +63,7 @@ layers {
   top: "conv2"
   blobs_lr: 1
   blobs_lr: 2
-  weight_decay: 1
+  weight_decay: 0
   weight_decay: 0
   convolution_param {
     num_output: 32
@@ -86,27 +86,21 @@ layers {
   top: "conv2"
 }
 layers {
-  name: "softmax"
-  type: SOFTMAX
+  name: "conv3"
+  type: CONVOLUTION
   bottom: "conv2"
-  top: "image_out"
-}
-layers {
-  name: "fc_images"
-  type: INNER_PRODUCT
-  bottom: "image_out"
-  top: "image_features"
-  blobs_lr: 0
+  top: "conv3"
+  blobs_lr: 1
   blobs_lr: 2
   weight_decay: 0
   weight_decay: 0
-  inner_product_param {
-    num_output: 64
+  convolution_param {
+    num_output: 32
+    kernel_size: 5
+    stride: 1
     weight_filler {
-      type: "imagexy"
-      channels: 32
-      width: 111
-      height: 111
+      type: "gaussian"
+      std: 0.01
     }
     bias_filler {
       type: "constant"
@@ -114,13 +108,71 @@ layers {
     }
   }
 }
-
+layers {
+  name: "relu3"
+  type: RELU
+  bottom: "conv3"
+  top: "conv3"
+}
+layers {
+  name: "softmax"
+  type: SOFTMAX
+  bottom: "conv3"
+  top: "image_out"
+  softmax_param {
+    temperature: 1.0
+  }
+}
+layers {
+  name: "fc_images"
+  type: INNER_PRODUCT
+  bottom: "image_out"
+  top: "image_features"
+  blobs_lr: 0
+  blobs_lr: 0
+  weight_decay: 0
+  weight_decay: 0
+  inner_product_param {
+    num_output: 64
+    weight_filler {
+      type: "imagexy"
+      channels: 32
+      width: 107
+      height: 107
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layers {
+  name: "fc1_smaller"
+  type: INNER_PRODUCT
+  bottom: "image_features"
+  top: "image_features_smaller"
+  blobs_lr: 5
+  blobs_lr: 10
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 10
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
 # Concat image layers and joint states
 layers {
   name: "concat_img_joint"
   type: CONCAT
   bottom: "joint_states"
-  bottom: "image_features"
+  bottom: "image_features_smaller"
   top: "concat_img_joint"
 }
 
@@ -149,12 +201,12 @@ layers {
   name: "relu2_both"
   type: RELU
   bottom: "fc1_both"
-  top: "fc1relu_both"
+  top: "fc1_both"
 }
 layers {
   name: "fc2_both"
   type: INNER_PRODUCT
-  bottom: "fc1relu_both"
+  bottom: "fc1_both"
   top: "fc2_both"
   blobs_lr: 5
   blobs_lr: 10
@@ -171,6 +223,12 @@ layers {
       value: 0
     }
   }
+}
+layers {
+  name: "relu3_both"
+  type: RELU
+  bottom: "fc2_both"
+  top: "fc2_both"
 }
 layers {
   name: "fc3_both"

@@ -9,6 +9,7 @@ namespace caffe {
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
      const vector<Blob<Dtype>*>& top) {
+  int top_size_ = this->layer_param_.top_size();
   batch_size_ = this->layer_param_.memory_data_param().batch_size();
   channels1_ = this->layer_param_.memory_data_param().channels1();
   channels2_ = this->layer_param_.memory_data_param().channels2();
@@ -30,9 +31,9 @@ void MemoryDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
       "batch_size, channels, height, and width must be specified and"
       " positive in memory_data_param";
   top[0]->Reshape(batch_size_, channels1_, height1_, width1_);
-  top[1]->Reshape(batch_size_, channels2_, height2_, width2_);
-  top[2]->Reshape(batch_size_, channels3_, height3_, width3_);
-  top[3]->Reshape(batch_size_, channels4_, height4_, width4_);
+  if (top_size_ > 1) top[1]->Reshape(batch_size_, channels2_, height2_, width2_);
+  if (top_size_ > 2) top[2]->Reshape(batch_size_, channels3_, height3_, width3_);
+  if (top_size_ > 3) top[3]->Reshape(batch_size_, channels4_, height4_, width4_);
   added_data1_.Reshape(batch_size_, channels1_, height1_, width1_);
   added_data2_.Reshape(batch_size_, channels2_, height2_, width2_);
   added_data3_.Reshape(batch_size_, channels3_, height3_, width3_);
@@ -45,7 +46,6 @@ void MemoryDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
   added_data2_.cpu_data();
   added_data3_.cpu_data();
   added_data4_.cpu_data();
-  num_data_ = -1;
 }
 
 // This could be useful later when we just want to add a few more samples.
@@ -80,6 +80,7 @@ void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, Dtype* data3, Dty
   CHECK(data2);
   CHECK(data3);
   CHECK(data4);
+  CHECK_EQ(top_size_, 4);
   CHECK_EQ(n % batch_size_, 0) << "n must be a multiple of batch size";
   data1_ = data1;
   data2_ = data2;
@@ -87,29 +88,42 @@ void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, Dtype* data3, Dty
   data4_ = data4;
   n_ = n;
   pos_ = 0;
-  num_data_ = 4;
+}
+
+template <typename Dtype>
+void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, Dtype* data3, int n) {
+  CHECK(data1);
+  CHECK(data2);
+  CHECK(data3);
+  CHECK_EQ(top_size_, 3);
+  CHECK_EQ(n % batch_size_, 0) << "n must be a multiple of batch size";
+  data1_ = data1;
+  data2_ = data2;
+  data3_ = data3;
+  n_ = n;
+  pos_ = 0;
 }
 
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, int n) {
   CHECK(data1);
   CHECK(data2);
+  CHECK_EQ(top_size_, 2);
   CHECK_EQ(n % batch_size_, 0) << "n must be a multiple of batch size";
   data1_ = data1;
   data2_ = data2;
   n_ = n;
   pos_ = 0;
-  num_data_ = 2;
 }
 
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::Reset(Dtype* data1, int n) {
   CHECK(data1);
+  CHECK_EQ(top_size_, 1);
   CHECK_EQ(n % batch_size_, 0) << "n must be a multiple of batch size";
   data1_ = data1;
   n_ = n;
   pos_ = 0;
-  num_data_ = 1;
 }
 
 template <typename Dtype>
@@ -117,13 +131,9 @@ void MemoryDataLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
   CHECK(data1_) << "MemoryDataLayer needs to be initalized by calling Reset";
   top[0]->set_cpu_data(data1_ + pos_ * size1_);
-  if (num_data_ > 1) {
-    top[1]->set_cpu_data(data2_ + pos_ * size2_);
-  }
-  if (num_data_ == 4) {
-    top[2]->set_cpu_data(data3_ + pos_ * size3_);
-    top[3]->set_cpu_data(data4_ + pos_ * size4_);
-  }
+  if (top_size_ > 1) top[1]->set_cpu_data(data2_ + pos_ * size2_);
+  if (top_size_ > 2) top[2]->set_cpu_data(data3_ + pos_ * size3_);
+  if (top_size_ > 3) top[3]->set_cpu_data(data4_ + pos_ * size4_);
   pos_ = (pos_ + batch_size_) % n_;
   has_new_data_ = false;
 }

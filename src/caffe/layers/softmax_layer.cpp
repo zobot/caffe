@@ -17,6 +17,7 @@ void SoftmaxLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   for (int i = 0; i < sum_multiplier_.count(); ++i) {
     multiplier_data[i] = 1.;
   }
+  temp_ = Dtype(1.0) / this->layer_param_.softmax_param().temperature();
   scale_.Reshape(bottom[0]->num(), 1, bottom[0]->height(), bottom[0]->width());
 }
 
@@ -45,6 +46,8 @@ void SoftmaxLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     // subtraction
     caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, channels, spatial_dim,
         1, -1., sum_multiplier_.cpu_data(), scale_data, 1., top_data + i * dim);
+    // scale based on temperature
+    caffe_scal<Dtype>(dim, temp_, top_data + i * dim);
     // exponentiation
     caffe_exp<Dtype>(dim, top_data + i * dim, top_data + i * dim);
     // sum after exp

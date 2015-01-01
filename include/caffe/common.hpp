@@ -101,7 +101,7 @@ class Caffe {
     return *singleton_;
   }
   enum Brew { CPU, GPU };
-  enum Phase { TRAIN, TEST };
+  enum Phase { TRAIN, TEST, FORWARDA, FORWARDB };
 
 
   // This random number generator facade hides boost and CUDA rng

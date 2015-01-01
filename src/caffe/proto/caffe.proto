@@ -180,6 +180,8 @@ message SolverState {
 enum Phase {
    TRAIN = 0;
    TEST = 1;
+   FORWARDA = 2;
+   FORWARDB = 3;
 }
 
 message NetState {
@@ -686,6 +688,7 @@ message SoftmaxParameter {
     CUDNN = 2;
   }
   optional Engine engine = 1 [default = DEFAULT];
+  optional float temperature = 2 [default = 1.0];
 }
 
 // Message that stores parameters used by TanHLayer

@@ -382,6 +382,7 @@ class SoftmaxLayer : public Layer<Dtype> {
   Blob<Dtype> sum_multiplier_;
   /// scale is an intermediate Blob to hold temporary results.
   Blob<Dtype> scale_;
+  Dtype temp_;
 };
 
 #ifdef USE_CUDNN
