@@ -8,8 +8,8 @@ layers {
   top: "zzzzzzzzz"
   memory_data_param {
     batch_size: 1
-    channels1: 40
-    channels2: 21
+    channels1: 10
+    channels2: 39
   }
 }
 
@@ -23,18 +23,12 @@ layers {
 }
 
 layers {
-  name: "relu_both"
-  type: RELU
-  bottom: "concat_img_joint"
-  top: "jirelu"
-}
-layers {
   name: "fc1_both"
   type: INNER_PRODUCT
-  bottom: "jirelu"
+  bottom: "concat_img_joint"
   top: "fc1_both"
-  blobs_lr: 5
-  blobs_lr: 10
+  blobs_lr: 2
+  blobs_lr: 4
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
@@ -60,8 +54,8 @@ layers {
   type: INNER_PRODUCT
   bottom: "fc1relu_both"
   top: "fc2_both"
-  blobs_lr: 5
-  blobs_lr: 10
+  blobs_lr: 2
+  blobs_lr: 4
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
@@ -77,12 +71,18 @@ layers {
   }
 }
 layers {
+  name: "relu3_both"
+  type: RELU
+  bottom: "fc2_both"
+  top: "fc2relu_both"
+}
+layers {
   name: "fc3_both"
   type: INNER_PRODUCT
-  bottom: "fc2_both"
+  bottom: "fc2relu_both"
   top: "nn_output"
-  blobs_lr: 5
-  blobs_lr: 10
+  blobs_lr: 2
+  blobs_lr: 4
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
@@ -97,3 +97,4 @@ layers {
     }
   }
 }
+

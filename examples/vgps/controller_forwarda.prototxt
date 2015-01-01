@@ -13,6 +13,7 @@ layers {
     height1: 240
   }
 }
+
 # Image Processing Layers
 layers {
   name: "conv1"
@@ -26,7 +27,7 @@ layers {
   convolution_param {
     num_output: 32
     kernel_size: 11
-    stride: 4
+    stride: 2
     weight_filler {
       type: "gaussian"
       std: 0.01
@@ -50,8 +51,8 @@ layers {
   top: "pool1"
   pooling_param {
     pool: MAX
-    kernel_size: 3
-    stride: 2
+    kernel_size: 1
+    stride: 1
   }
 }
 
@@ -71,7 +72,7 @@ layers {
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
-    num_output: 40
+    num_output: 10
     weight_filler {
       type: "gaussian"
       std: 0.01

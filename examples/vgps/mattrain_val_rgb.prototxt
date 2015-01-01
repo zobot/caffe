@@ -11,13 +11,14 @@ layers {
     channels1: 3
     width1: 240
     height1: 240
-    channels2: 21
+    channels2: 39
     channels3: 7
     channels4: 7
     height4: 7
   }
   include: { phase: TRAIN }
 }
+
 # Image Processing Layers
 layers {
   name: "conv1"
@@ -31,7 +32,7 @@ layers {
   convolution_param {
     num_output: 32
     kernel_size: 11
-    stride: 4
+    stride: 2
     weight_filler {
       type: "gaussian"
       std: 0.01
@@ -41,14 +42,12 @@ layers {
       value: 0
     }
   }
-  include: { phase: TRAIN }
 }
 layers {
   name: "relu1"
   type: RELU
   bottom: "conv1"
   top: "conv1"
-  include: { phase: TRAIN }
 }
 layers {
   name: "pool1"
@@ -57,10 +56,9 @@ layers {
   top: "pool1"
   pooling_param {
     pool: MAX
-    kernel_size: 3
-    stride: 2
+    kernel_size: 1
+    stride: 1
   }
-  include: { phase: TRAIN }
 }
 
 layers {
@@ -68,7 +66,6 @@ layers {
   type: SOFTMAX
   bottom: "pool1"
   top: "image_out"
-  include: { phase: TRAIN }
 }
 layers {
   name: "fc_images"
@@ -80,7 +77,7 @@ layers {
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
-    num_output: 40
+    num_output: 10
     weight_filler {
       type: "gaussian"
       std: 0.01
@@ -90,7 +87,6 @@ layers {
       value: 0
     }
   }
-  include: { phase: TRAIN }
 }
 
 # Concat image layers and joint states
@@ -100,20 +96,12 @@ layers {
   bottom: "joint_input"
   bottom: "image_features"
   top: "concat_img_joint"
-  include: { phase: TRAIN }
 }
 
 layers {
-  name: "relu_both"
-  type: RELU
-  bottom: "concat_img_joint"
-  top: "jirelu"
-  include: { phase: TRAIN }
-}
-layers {
   name: "fc1_both"
   type: INNER_PRODUCT
-  bottom: "jirelu"
+  bottom: "concat_img_joint"
   top: "fc1_both"
   blobs_lr: 2
   blobs_lr: 4
@@ -130,14 +118,12 @@ layers {
       value: 0
     }
   }
-  include: { phase: TRAIN }
 }
 layers {
   name: "relu2_both"
   type: RELU
   bottom: "fc1_both"
   top: "fc1relu_both"
-  include: { phase: TRAIN }
 }
 layers {
   name: "fc2_both"
@@ -159,12 +145,17 @@ layers {
       value: 0
     }
   }
-  include: { phase: TRAIN }
+}
+layers {
+  name: "relu3_both"
+  type: RELU
+  bottom: "fc2_both"
+  top: "fc2relu_both"
 }
 layers {
   name: "fc3_both"
   type: INNER_PRODUCT
-  bottom: "fc2_both"
+  bottom: "fc2relu_both"
   top: "nn_output"
   blobs_lr: 2
   blobs_lr: 4
@@ -181,8 +172,8 @@ layers {
       value: 0
     }
   }
-  include: { phase: TRAIN }
 }
+
 layers {
   name: "loss"
   type: WEIGHTED_EUCLIDEAN_LOSS
@@ -192,3 +183,4 @@ layers {
   top: "euclidean_error"
   include: { phase: TRAIN }
 }
+
