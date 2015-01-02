@@ -9,7 +9,7 @@ namespace caffe {
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
      const vector<Blob<Dtype>*>& top) {
-  int top_size_ = this->layer_param_.top_size();
+  top_size_ = top.size();
   batch_size_ = this->layer_param_.memory_data_param().batch_size();
   channels1_ = this->layer_param_.memory_data_param().channels1();
   channels2_ = this->layer_param_.memory_data_param().channels2();
