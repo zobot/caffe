@@ -10,6 +10,8 @@
 
 namespace caffe {
 
+// TODO - Implement flag for channel-wise vs. pixel-wise softmax
+// The only switch is to use kernel_channel_XXX() vs kernel_pixel_XXX()
 template <typename Dtype>
 __global__ void kernel_channel_max(const int num, const int channels,
     const int spatial_dim, const Dtype* data, Dtype* out) {
@@ -25,6 +27,20 @@ __global__ void kernel_channel_max(const int num, const int channels,
 }
 
 template <typename Dtype>
+__global__ void kernel_pixel_max(const int num, const int channels,
+    const int spatial_dim, const Dtype* data, Dtype* out) {
+  CUDA_KERNEL_LOOP(index, num * channels) {
+    int n = index / channels;
+    int c = index % channels;
+    Dtype maxval = -FLT_MAX;
+    for (int s = 0; s < spatial_dim; ++s) {
+      maxval = max(data[(n * channels + c) * spatial_dim + s], maxval);
+    }
+    out[index] = maxval;
+  }
+}
+
+template <typename Dtype>
 __global__ void kernel_channel_subtract(const int num, const int channels,
     const int spatial_dim, Dtype* data, const Dtype* channel_max) {
   CUDA_KERNEL_LOOP(index, num * spatial_dim) {
@@ -32,6 +48,18 @@ __global__ void kernel_channel_subtract(const int num, const int channels,
     int s = index % spatial_dim;
     for (int c = 0; c < channels; ++c) {
       data[(n * channels + c) * spatial_dim + s] -= channel_max[index];
+    }
+  }
+}
+
+template <typename Dtype>
+__global__ void kernel_pixel_subtract(const int num, const int channels,
+    const int spatial_dim, Dtype* data, const Dtype* pixel_max) {
+  CUDA_KERNEL_LOOP(index, num * channels) {
+    int n = index / channels;
+    int c = index % channels;
+    for (int s = 0; s < spatial_dim; ++s) {
+      data[(n * channels + c) * spatial_dim + s] -= pixel_max[index];
     }
   }
 }
@@ -58,6 +86,20 @@ __global__ void kernel_channel_sum(const int num, const int channels,
 }
 
 template <typename Dtype>
+__global__ void kernel_pixel_sum(const int num, const int channels,
+    const int spatial_dim, const Dtype* data, Dtype* pixel_sum) {
+  CUDA_KERNEL_LOOP(index, num * channels) {
+    int n = index / channels;
+    int c = index % channels;
+    Dtype sum = 0;
+    for (int s = 0; s < spatial_dim; ++s) {
+      sum += data[(n * channels + c) * spatial_dim + s];
+    }
+    pixel_sum[index] = sum;
+  }
+}
+
+template <typename Dtype>
 __global__ void kernel_channel_div(const int num, const int channels,
     const int spatial_dim, Dtype* data, const Dtype* channel_sum) {
   CUDA_KERNEL_LOOP(index, num * spatial_dim) {
@@ -65,6 +107,18 @@ __global__ void kernel_channel_div(const int num, const int channels,
     int s = index % spatial_dim;
     for (int c = 0; c < channels; ++c) {
       data[(n * channels + c) * spatial_dim + s] /= channel_sum[index];
+    }
+  }
+}
+
+template <typename Dtype>
+__global__ void kernel_pixel_div(const int num, const int channels,
+    const int spatial_dim, Dtype* data, const Dtype* pixel_sum) {
+  CUDA_KERNEL_LOOP(index, num * channels) {
+    int n = index / channels;
+    int c = index % channels;
+    for (int s = 0; s < spatial_dim; ++s) {
+      data[(n * channels + c) * spatial_dim + s] /= pixel_sum[index];
     }
   }
 }
@@ -86,6 +140,21 @@ __global__ void kernel_channel_dot(const int num, const int channels,
 }
 
 template <typename Dtype>
+__global__ void kernel_pixel_dot(const int num, const int channels,
+    const int spatial_dim, const Dtype* data_1, const Dtype* data_2,
+    Dtype* pixel_dot) {
+  CUDA_KERNEL_LOOP(index, num * channels) {
+    int n = index / channels;
+    int c = index % channels;
+    Dtype dot = 0;
+    for (int s = 0; s < spatial_dim; ++s) {
+      dot += (data_1[(n * channels + c) * spatial_dim + s]
+          * data_2[(n * channels + c) * spatial_dim + s]);
+    }
+    pixel_dot[index] = dot;
+  }
+}
+template <typename Dtype>
 void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
     const vector<Blob<Dtype>*>& top) {
   const Dtype* bottom_data = bottom[0]->gpu_data();
@@ -99,16 +168,16 @@ void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   // and then normalize.
   // compute max
   // NOLINT_NEXT_LINE(whitespace/operators)
-  kernel_channel_max<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
+  kernel_pixel_max<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
       CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
       scale_data);
   // subtract
   // NOLINT_NEXT_LINE(whitespace/operators)
-  kernel_channel_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
+  kernel_pixel_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
       CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
       scale_data);
   // divide by temperature
-  caffe_gpu_scal<Dtype>(num*spatial_dim*channels, temp_, top_data);
+  // caffe_gpu_scal<Dtype>(num*spatial_dim*channels, temp_, top_data);
   // exponentiate
   // NOLINT_NEXT_LINE(whitespace/operators)
   kernel_exp<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
@@ -116,12 +185,12 @@ void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
       top_data);
   // sum after exp
   // NOLINT_NEXT_LINE(whitespace/operators)
-  kernel_channel_sum<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
+  kernel_pixel_sum<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
       CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
       scale_data);
   // divide
   // NOLINT_NEXT_LINE(whitespace/operators)
-  kernel_channel_div<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
+  kernel_pixel_div<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
       CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
       scale_data);
 }
@@ -139,11 +208,11 @@ void SoftmaxLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
   caffe_copy(top[0]->count(), top_diff, bottom_diff);
   // Compute inner1d(top_diff, top_data) and subtract them from the bottom diff.
   // NOLINT_NEXT_LINE(whitespace/operators)
-  kernel_channel_dot<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
+  kernel_pixel_dot<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
       CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_diff, top_data,
       scale_data);
   // NOLINT_NEXT_LINE(whitespace/operators)
-  kernel_channel_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
+  kernel_pixel_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * spatial_dim),
       CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, bottom_diff,
       scale_data);
   // elementwise multiplication
