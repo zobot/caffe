@@ -120,7 +120,8 @@ layers {
   bottom: "conv3"
   top: "image_out"
   softmax_param {
-    temperature: 1.0
+    engine: CAFFE
+    temperature: 0.01
   }
 }
 layers {
@@ -146,33 +147,33 @@ layers {
     }
   }
 }
-layers {
-  name: "fc1_smaller"
-  type: INNER_PRODUCT
-  bottom: "image_features"
-  top: "image_features_smaller"
-  blobs_lr: 5
-  blobs_lr: 10
-  weight_decay: 1
-  weight_decay: 0
-  inner_product_param {
-    num_output: 10
-    weight_filler {
-      type: "gaussian"
-      std: 0.01
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
+#layers {
+  #name: "fc1_smaller"
+  #type: INNER_PRODUCT
+  #bottom: "image_features"
+  #top: "image_features_smaller"
+  #blobs_lr: 5
+  #blobs_lr: 10
+  #weight_decay: 1
+  #weight_decay: 0
+  #inner_product_param {
+    #num_output: 10
+    #weight_filler {
+      #type: "gaussian"
+      #std: 0.01
+    #}
+    #bias_filler {
+      #type: "constant"
+      #value: 0
+    #}
+  #}
+#}
 # Concat image layers and joint states
 layers {
   name: "concat_img_joint"
   type: CONCAT
   bottom: "joint_states"
-  bottom: "image_features_smaller"
+  bottom: "image_features"
   top: "concat_img_joint"
 }
 
