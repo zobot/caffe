@@ -91,12 +91,16 @@ layers {
   type: SOFTMAX
   bottom: "conv3"
   top: "image_out"
+  softmax_param {
+    engine: CAFFE
+    temperature: 0.01
+  }
 }
 layers {
   name: "fc_images"
   type: INNER_PRODUCT
   bottom: "image_out"
-  top: "image_features_bg"
+  top: "image_features"
   blobs_lr: 0
   blobs_lr: 0
   weight_decay: 0
@@ -108,27 +112,6 @@ layers {
       channels: 32
       width: 107
       height: 107
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layers {
-  name: "fc1_smaller"
-  type: INNER_PRODUCT
-  bottom: "image_features_bg"
-  top: "image_features"
-  blobs_lr: 5
-  blobs_lr: 10
-  weight_decay: 1
-  weight_decay: 0
-  inner_product_param {
-    num_output: 10
-    weight_filler {
-      type: "gaussian"
-      std: 0.01
     }
     bias_filler {
       type: "constant"

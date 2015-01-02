@@ -109,12 +109,16 @@ layers {
   type: SOFTMAX
   bottom: "conv3"
   top: "image_out"
+  softmax_param {
+    engine: CAFFE
+    temperature: 0.01
+  }
 }
 layers {
   name: "fc_images"
   type: INNER_PRODUCT
   bottom: "image_out"
-  top: "image_features_bg"
+  top: "image_features"
   blobs_lr: 0
   blobs_lr: 0
   weight_decay: 0
@@ -126,27 +130,6 @@ layers {
       channels: 32
       width: 107
       height: 107
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layers {
-  name: "fc1_smaller"
-  type: INNER_PRODUCT
-  bottom: "image_features_bg"
-  top: "image_features"
-  blobs_lr: 5
-  blobs_lr: 10
-  weight_decay: 1
-  weight_decay: 0
-  inner_product_param {
-    num_output: 10
-    weight_filler {
-      type: "gaussian"
-      std: 0.01
     }
     bias_filler {
       type: "constant"
@@ -169,8 +152,8 @@ layers {
   type: INNER_PRODUCT
   bottom: "concat_img_joint"
   top: "fc1_both"
-  blobs_lr: 2
-  blobs_lr: 4
+  blobs_lr: 5
+  blobs_lr: 10
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
@@ -189,15 +172,15 @@ layers {
   name: "relu2_both"
   type: RELU
   bottom: "fc1_both"
-  top: "fc1relu_both"
+  top: "fc1_both"
 }
 layers {
   name: "fc2_both"
   type: INNER_PRODUCT
-  bottom: "fc1relu_both"
+  bottom: "fc1_both"
   top: "fc2_both"
-  blobs_lr: 2
-  blobs_lr: 4
+  blobs_lr: 5
+  blobs_lr: 10
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
@@ -216,15 +199,15 @@ layers {
   name: "relu3_both"
   type: RELU
   bottom: "fc2_both"
-  top: "fc2relu_both"
+  top: "fc2_both"
 }
 layers {
   name: "fc3_both"
   type: INNER_PRODUCT
-  bottom: "fc2relu_both"
+  bottom: "fc2_both"
   top: "nn_output"
-  blobs_lr: 2
-  blobs_lr: 4
+  blobs_lr: 5
+  blobs_lr: 10
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
