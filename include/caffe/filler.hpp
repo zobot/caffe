@@ -155,7 +155,8 @@ class ImageXYFiller : public Filler<Dtype> {
         for (int y = 0; y < num_Y; ++y) {
           // Iterature over all params for this input point.
           for (int k = 0; k < blob->height(); ++k) {
-            Dtype* weight_ptr = data + blob->offset(0,0,k, x*y*c);
+            int offset = c*num_X*num_Y + y*num_X + x;
+            Dtype* weight_ptr = data + blob->offset(0,0,k, offset);
             if (c*2 == k) {
               weight_ptr[0] = 2*(Dtype(x+1) / Dtype(num_X) - Dtype(0.5));
             } else if (c*2+1 == k) {
