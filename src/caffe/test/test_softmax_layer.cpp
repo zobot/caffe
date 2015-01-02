@@ -43,22 +43,29 @@ TYPED_TEST(SoftmaxLayerTest, TestForward) {
   SoftmaxLayer<Dtype> layer(layer_param);
   layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
   layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
+  // NOTE: Written for pixel-wise softmax currently implemented in GPU, and not
+  // yet in CPU.
   // Test sum
   for (int i = 0; i < this->blob_bottom_->num(); ++i) {
-    for (int k = 0; k < this->blob_bottom_->height(); ++k) {
-      for (int l = 0; l < this->blob_bottom_->width(); ++l) {
-        Dtype sum = 0;
-        for (int j = 0; j < this->blob_top_->channels(); ++j) {
+    for (int j = 0; j < this->blob_top_->channels(); ++j) {
+      Dtype sum = 0;
+      for (int k = 0; k < this->blob_bottom_->height(); ++k) {
+        for (int l = 0; l < this->blob_bottom_->width(); ++l) {
           sum += this->blob_top_->data_at(i, j, k, l);
         }
-        EXPECT_GE(sum, 0.999);
-        EXPECT_LE(sum, 1.001);
-        // Test exact values
-        Dtype scale = 0;
-        for (int j = 0; j < this->blob_bottom_->channels(); ++j) {
+      }
+      EXPECT_GE(sum, 0.999);
+      EXPECT_LE(sum, 1.001);
+
+      // Test exact values
+      Dtype scale = 0;
+      for (int k = 0; k < this->blob_bottom_->height(); ++k) {
+        for (int l = 0; l < this->blob_bottom_->width(); ++l) {
           scale += exp(this->blob_bottom_->data_at(i, j, k, l));
         }
-        for (int j = 0; j < this->blob_bottom_->channels(); ++j) {
+      }
+      for (int k = 0; k < this->blob_bottom_->height(); ++k) {
+        for (int l = 0; l < this->blob_bottom_->width(); ++l) {
           EXPECT_GE(this->blob_top_->data_at(i, j, k, l) + 1e-4,
               exp(this->blob_bottom_->data_at(i, j, k, l)) / scale)
               << "debug: " << i << " " << j;
