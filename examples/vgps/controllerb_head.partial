@@ -8,8 +8,8 @@ layers {
   top: "zzzzzzzzz"
   memory_data_param {
     batch_size: 1
-    channels1: 40
-    channels2: 21
+    channels1: 64
+    channels2: 39
   }
 }
 

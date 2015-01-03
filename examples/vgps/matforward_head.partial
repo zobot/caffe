@@ -4,14 +4,12 @@ layers {
   type: MEMORY_DATA
   top: "rgb_input"
   top: "joint_input"
-  top: "zzzzzzzzzz"
-  top: "zzzzzzzzz"
   memory_data_param {
-    batch_size: 100
+    batch_size: 20
     channels1: 3
     width1: 240
     height1: 240
-    channels2: 21
+    channels2: 39
     channels3: 7
     channels4: 7
     height4: 7

@@ -3,9 +3,6 @@ layers {
   name: "data_in"
   type: MEMORY_DATA
   top: "rgb_input"
-  top: "zzzz"
-  top: "zzzzzzzzzz"
-  top: "zzzzzzzzz"
   memory_data_param {
     batch_size: 1
     channels1: 3
