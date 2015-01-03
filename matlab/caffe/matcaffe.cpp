@@ -126,7 +126,7 @@ static void vgps_train(const mxArray* const bottom) {
   const int dU = mxGetDimensions(action)[0];
   CHECK_EQ(channels, 3) << "Channel dimension incorrect";
   CHECK_EQ(height, 240) << "Image height dimension incorrect";
-  CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
+  //CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
   CHECK_EQ(dU, 7) << "Action dimension incorrect: " << dU;
 
   input_blobs[0] = shared_ptr<Blob<float> >(new Blob<float>());
@@ -182,7 +182,7 @@ static mxArray* vgps_forward(const mxArray* const bottom) {
   const int dU = mxGetDimensions(action)[0];
   CHECK_EQ(channels, 3) << "Channel dimension incorrect";
   CHECK_EQ(height, 240) << "Image height dimension incorrect";
-  CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
+  //CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
   CHECK_EQ(dU, 7) << "Action dimension incorrect: " << dU;
 
   input_blobs[0] = shared_ptr<Blob<float> >(new Blob<float>());
@@ -256,7 +256,7 @@ static mxArray* vgps_forward_only(const mxArray* const bottom) {
   const int dX = mxGetDimensions(joint)[0];
   CHECK_EQ(channels, 3);
   CHECK_EQ(height, 240);
-  CHECK_EQ(dX, 21);
+  //CHECK_EQ(dX, 21);
 
   input_blobs[0] = shared_ptr<Blob<float> >(new Blob<float>());
   input_blobs[1] = shared_ptr<Blob<float> >(new Blob<float>());
