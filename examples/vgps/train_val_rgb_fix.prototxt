@@ -20,20 +20,38 @@ layers {
   top: "loss_weights"
   top: "rgb_frames"
   hdf5_data_param {
-    source: "examples/vgps/val_9tgt_shuff.txt"
+    source: "examples/vgps/val_9tgt_shuff_copy.txt"
     batch_size: 25
   }
-  include: { phase: TEST }
+  include: {
+    phase: TEST
+    stage: 'test-on-test'
+  }
 }
-
+layers {
+  name: "data"
+  type: HDF5_DATA
+  top: "joint_states"
+  top: "output_torques"
+  top: "loss_weights"
+  top: "rgb_frames"
+  hdf5_data_param {
+    source: "examples/vgps/train_9tgt_shuff_copy.txt"
+    batch_size: 25
+  }
+  include: {
+    phase: TEST
+    stage: 'test-on-train'
+  }
+}
 # Image Processing Layers
 layers {
   name: "conv1"
   type: CONVOLUTION
   bottom: "rgb_frames"
   top: "conv1"
-  blobs_lr: 1
-  blobs_lr: 2
+  blobs_lr: 100
+  blobs_lr: 200
   weight_decay: 0
   weight_decay: 0
   convolution_param {
@@ -61,8 +79,8 @@ layers {
   type: CONVOLUTION
   bottom: "conv1"
   top: "conv2"
-  blobs_lr: 1
-  blobs_lr: 2
+  blobs_lr: 100
+  blobs_lr: 200
   weight_decay: 0
   weight_decay: 0
   convolution_param {
@@ -90,8 +108,8 @@ layers {
   type: CONVOLUTION
   bottom: "conv2"
   top: "conv3"
-  blobs_lr: 1
-  blobs_lr: 2
+  blobs_lr: 100
+  blobs_lr: 200
   weight_decay: 0
   weight_decay: 0
   convolution_param {
@@ -118,15 +136,15 @@ layers {
   name: "softmax"
   type: SOFTMAX
   bottom: "conv3"
-  top: "image_out"
+  top: "conv3"
   softmax_param {
-    temperature: 1.0
+    temperature: 0.1
   }
 }
 layers {
   name: "fc_images"
   type: INNER_PRODUCT
-  bottom: "image_out"
+  bottom: "conv3"
   top: "image_features"
   blobs_lr: 0
   blobs_lr: 0
@@ -146,33 +164,33 @@ layers {
     }
   }
 }
-layers {
-  name: "fc1_smaller"
-  type: INNER_PRODUCT
-  bottom: "image_features"
-  top: "image_features_smaller"
-  blobs_lr: 5
-  blobs_lr: 10
-  weight_decay: 1
-  weight_decay: 0
-  inner_product_param {
-    num_output: 10
-    weight_filler {
-      type: "gaussian"
-      std: 0.01
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
+#layers {
+#  name: "fc1_smaller"
+#  type: INNER_PRODUCT
+#  bottom: "image_features"
+#  top: "image_features_smaller"
+#  blobs_lr: 5
+#  blobs_lr: 10
+#  weight_decay: 1
+#  weight_decay: 0
+#  inner_product_param {
+#    num_output: 10
+#    weight_filler {
+#      type: "gaussian"
+#      std: 0.01
+#    }
+#    bias_filler {
+#      type: "constant"
+#      value: 0
+#    }
+#  }
+#}
 # Concat image layers and joint states
 layers {
   name: "concat_img_joint"
   type: CONCAT
   bottom: "joint_states"
-  bottom: "image_features_smaller"
+  bottom: "image_features"
   top: "concat_img_joint"
 }
 
