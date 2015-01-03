@@ -11,5 +11,5 @@ max_iter: 10000
 momentum: 0.9
 weight_decay: 0.005
 snapshot: 2000
-snapshot_prefix: "examples/vgps/snapshot/rgb_fix3"
+snapshot_prefix: "examples/vgps/snapshot/rgb_fix3_temp1.0_lr100"
 solver_mode: GPU

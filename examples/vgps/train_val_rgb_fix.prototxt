@@ -32,8 +32,8 @@ layers {
   type: CONVOLUTION
   bottom: "rgb_frames"
   top: "conv1"
-  blobs_lr: 1
-  blobs_lr: 2
+  blobs_lr: 100
+  blobs_lr: 200
   weight_decay: 0
   weight_decay: 0
   convolution_param {
@@ -61,8 +61,8 @@ layers {
   type: CONVOLUTION
   bottom: "conv1"
   top: "conv2"
-  blobs_lr: 1
-  blobs_lr: 2
+  blobs_lr: 100
+  blobs_lr: 200
   weight_decay: 0
   weight_decay: 0
   convolution_param {
@@ -90,8 +90,8 @@ layers {
   type: CONVOLUTION
   bottom: "conv2"
   top: "conv3"
-  blobs_lr: 1
-  blobs_lr: 2
+  blobs_lr: 100
+  blobs_lr: 200
   weight_decay: 0
   weight_decay: 0
   convolution_param {
@@ -121,7 +121,7 @@ layers {
   top: "image_out"
   softmax_param {
     engine: CAFFE
-    temperature: 0.01
+    temperature: 1.0
   }
 }
 layers {
