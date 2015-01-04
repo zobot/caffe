@@ -4,10 +4,10 @@ layers {
   type: MEMORY_DATA
   top: "rgb_input"
   top: "joint_input"
-  top: "action_input"
-  top: "prec_input"
+  top: "zzzzzzzzzz"
+  top: "zzzzzzzzz"
   memory_data_param {
-    batch_size: 50
+    batch_size: 20
     channels1: 3
     width1: 240
     height1: 240
@@ -16,6 +16,5 @@ layers {
     channels4: 7
     height4: 7
   }
-  include: { phase: TRAIN }
 }
 

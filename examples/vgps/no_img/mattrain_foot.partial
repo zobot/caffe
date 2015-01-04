@@ -1,0 +1,10 @@
+layers {
+  name: "loss"
+  type: WEIGHTED_EUCLIDEAN_LOSS
+  bottom: "nn_output"
+  bottom: "action_input"
+  bottom: "prec_input"
+  top: "euclidean_error"
+  include: { phase: TRAIN }
+}
+

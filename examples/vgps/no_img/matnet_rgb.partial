@@ -1,0 +1,37 @@
+# Image Processing Layers
+
+layers {
+  name: "fc_images"
+  type: INNER_PRODUCT
+  bottom: "rgb_input"
+  top: "image_featuresc"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layers {
+    name: "prod"
+    type: ELTWISE
+    bottom: "image_featuresc"
+    bottom: "image_featuresc"
+    top: "image_features"
+    eltwise_param {
+        operation: SUM
+        coeff: 0
+        coeff: 0
+    }
+}
+
