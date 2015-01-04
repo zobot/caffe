@@ -35,6 +35,39 @@ TYPED_TEST(ConstantFillerTest, TestFill) {
   }
 }
 
+template <typename Dtype>
+class ImageXYFillerTest : public ::testing::Test {
+ protected:
+  ImageXYFillerTest()
+      : blob_(new Blob<Dtype>(1, 1, 2, 100)),
+        filler_param_() {
+    filler_param_.set_channels(1);
+    filler_param_.set_height(10);
+    filler_param_.set_width(10);
+    filler_.reset(new UniformFiller<Dtype>(filler_param_));
+    filler_->Fill(blob_);
+  }
+  virtual ~ImageXYFillerTest() { delete blob_; }
+  Blob<Dtype>* const blob_;
+  FillerParameter filler_param_;
+  shared_ptr<UniformFiller<Dtype> > filler_;
+};
+
+TYPED_TEST_CASE(ImageXYFillerTest, TestDtypes);
+
+TYPED_TEST(ImageXYFillerTest, TestFill) {
+  EXPECT_TRUE(this->blob_);
+  const int count = this->blob_->count();
+  const TypeParam* data = this->blob_->cpu_data();
+  int num_zero = 0;
+  for (int i = 0; i < count; ++i) {
+    if (data[i] == 0.0) num_zero += 1;
+    EXPECT_GE(data[i], -1.0);
+    EXPECT_LE(data[i], 1.0);
+  }
+  EXPECT_EQ(num_zero, 0);
+}
+
 
 template <typename Dtype>
 class UniformFillerTest : public ::testing::Test {

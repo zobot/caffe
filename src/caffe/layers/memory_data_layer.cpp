@@ -80,7 +80,7 @@ void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, Dtype* data3, Dty
   CHECK(data2);
   CHECK(data3);
   CHECK(data4);
-  CHECK_EQ(top_size_, 4);
+  CHECK_EQ(top_size_, 4) << "Wrong top size";
   CHECK_EQ(n % batch_size_, 0) << "n must be a multiple of batch size";
   data1_ = data1;
   data2_ = data2;
@@ -95,7 +95,7 @@ void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, Dtype* data3, int
   CHECK(data1);
   CHECK(data2);
   CHECK(data3);
-  CHECK_EQ(top_size_, 3);
+  CHECK_EQ(top_size_, 3) << "Wrong top size";
   CHECK_EQ(n % batch_size_, 0) << "n must be a multiple of batch size";
   data1_ = data1;
   data2_ = data2;
@@ -108,7 +108,7 @@ template <typename Dtype>
 void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, int n) {
   CHECK(data1);
   CHECK(data2);
-  CHECK_EQ(top_size_, 2);
+  CHECK_EQ(top_size_, 2) << "Wrong top size";
   CHECK_EQ(n % batch_size_, 0) << "n must be a multiple of batch size";
   data1_ = data1;
   data2_ = data2;
@@ -119,7 +119,7 @@ void MemoryDataLayer<Dtype>::Reset(Dtype* data1, Dtype* data2, int n) {
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::Reset(Dtype* data1, int n) {
   CHECK(data1);
-  CHECK_EQ(top_size_, 1);
+  CHECK_EQ(top_size_, 1) << "Wrong top size";
   CHECK_EQ(n % batch_size_, 0) << "n must be a multiple of batch size";
   data1_ = data1;
   n_ = n;
