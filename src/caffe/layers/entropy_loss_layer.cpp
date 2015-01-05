@@ -31,7 +31,7 @@ void EntropyLossLayer<Dtype>::Forward_cpu(
   for (int i = 0; i < count; ++i) {
     loss -= input_data[i] * log(input_data[i]);
   }
-  top[0]->mutable_cpu_data()[0] = - loss / num;
+  top[0]->mutable_cpu_data()[0] = loss / num;
 }
 
 template <typename Dtype>
@@ -54,7 +54,7 @@ void EntropyLossLayer<Dtype>::Backward_cpu(
     }
     // Scale down gradient
     const Dtype loss_weight = top[0]->cpu_diff()[0];
-    caffe_scal(count, -loss_weight / num, bottom_diff);
+    caffe_scal(count, loss_weight / num, bottom_diff);
   }
 }
 
