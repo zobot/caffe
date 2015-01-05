@@ -171,9 +171,16 @@ TYPED_TEST(SoftmaxLayerTest, TestGradientChannel) {
   LayerParameter layer_param;
   const char* dimension = "channel";
   layer_param.mutable_softmax_param()->set_dimension(dimension);
+  layer_param.mutable_softmax_param()->set_temperature(0.1);
   SoftmaxLayer<Dtype> layer(layer_param);
-  GradientChecker<Dtype> checker(1e-2, 1e-3);
+  GradientChecker<Dtype> checker(1e-2, 1e-2);
   checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+      this->blob_top_vec_);
+  // lower tolerance for higher temperature
+  layer_param.mutable_softmax_param()->set_temperature(1.0);
+  SoftmaxLayer<Dtype> layer2(layer_param);
+  GradientChecker<Dtype> checker2(1e-2, 1e-3);
+  checker2.CheckGradientExhaustive(&layer2, this->blob_bottom_vec_,
       this->blob_top_vec_);
 }
 
@@ -183,9 +190,16 @@ TYPED_TEST(SoftmaxLayerTest, TestGradientSpatial) {
     LayerParameter layer_param;
     const char* dimension = "spatial";
     layer_param.mutable_softmax_param()->set_dimension(dimension);
+  layer_param.mutable_softmax_param()->set_temperature(0.1);
     SoftmaxLayer<Dtype> layer(layer_param);
-    GradientChecker<Dtype> checker(1e-2, 1e-3);
+    GradientChecker<Dtype> checker(1e-2, 1e-2);
     checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+        this->blob_top_vec_);
+    // lower tolerance for higher temperature
+    layer_param.mutable_softmax_param()->set_temperature(1.0);
+    SoftmaxLayer<Dtype> layer2(layer_param);
+    GradientChecker<Dtype> checker2(1e-2, 1e-3);
+    checker2.CheckGradientExhaustive(&layer2, this->blob_bottom_vec_,
         this->blob_top_vec_);
   }
 }
@@ -196,9 +210,16 @@ TYPED_TEST(SoftmaxLayerTest, TestGradientAll) {
     LayerParameter layer_param;
     const char* dimension = "all";
     layer_param.mutable_softmax_param()->set_dimension(dimension);
+  layer_param.mutable_softmax_param()->set_temperature(0.1);
     SoftmaxLayer<Dtype> layer(layer_param);
-    GradientChecker<Dtype> checker(1e-2, 1e-3);
+    GradientChecker<Dtype> checker(1e-2, 1e-2);
     checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
+        this->blob_top_vec_);
+    // lower tolerance for higher temperature
+    layer_param.mutable_softmax_param()->set_temperature(1.0);
+    SoftmaxLayer<Dtype> layer2(layer_param);
+    GradientChecker<Dtype> checker2(1e-2, 1e-3);
+    checker2.CheckGradientExhaustive(&layer2, this->blob_bottom_vec_,
         this->blob_top_vec_);
   }
 }

@@ -15,7 +15,7 @@ void SoftmaxLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
   for (int i = 0; i < sum_multiplier_.count(); ++i) {
     multiplier_data[i] = 1.;
   }
-  temp_ = Dtype(1.0) / this->layer_param_.softmax_param().temperature();
+  temp_ = Dtype(1.0) / Dtype(this->layer_param_.softmax_param().temperature());
   dimension_ = this->layer_param_.softmax_param().dimension();
   top[0]->Reshape(bottom[0]->num(), bottom[0]->channels(),
     bottom[0]->height(), bottom[0]->width());
@@ -56,7 +56,7 @@ void SoftmaxLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     caffe_cpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, channels, spatial_dim,
         1, -1., sum_multiplier_.cpu_data(), scale_data, 1., top_data + i * dim);
     // scale based on temperature
-    // caffe_scal<Dtype>(dim, temp_, top_data + i * dim);
+    caffe_scal<Dtype>(dim, temp_, top_data + i * dim);
     // exponentiation
     caffe_exp<Dtype>(dim, top_data + i * dim, top_data + i * dim);
     // sum after exp
@@ -95,6 +95,7 @@ void SoftmaxLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
         -1., sum_multiplier_.cpu_data(), scale_data, 1., bottom_diff + i * dim);
   }
   // elementwise multiplication
+  caffe_scal<Dtype>(top[0]->count(), temp_, bottom_diff);
   caffe_mul(top[0]->count(), bottom_diff, top_data, bottom_diff);
 }
 

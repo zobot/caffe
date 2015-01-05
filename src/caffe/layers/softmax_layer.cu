@@ -362,7 +362,8 @@ void SoftmaxLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
         CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, bottom_diff,
         scale_data);
   }
-  // elementwise multiplication
+  // scale by temperature and elementwise multiplication
+  caffe_gpu_scal<Dtype>(top[0]->count(), temp_, bottom_diff);
   caffe_gpu_mul<Dtype>(top[0]->count(), bottom_diff, top_data, bottom_diff);
 }
 
