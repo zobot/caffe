@@ -23,8 +23,8 @@ class InnerProductLayerTest : public MultiDeviceTest<TypeParam> {
  protected:
   InnerProductLayerTest()
       : blob_bottom_(new Blob<Dtype>(2, 3, 4, 5)),
-        blob_top_(new Blob<Dtype>()),
-        img_blob_bottom_(new Blob<Dtype>(2, 2, 10, 10)) {
+        img_blob_bottom_(new Blob<Dtype>(2, 2, 10, 10)),
+        blob_top_(new Blob<Dtype>()) {
     // fill the values
     FillerParameter filler_param;
     UniformFiller<Dtype> filler(filler_param);
@@ -67,6 +67,40 @@ TYPED_TEST(InnerProductLayerTest, TestSetUp) {
   EXPECT_EQ(this->blob_top_->channels(), 10);
 }
 
+TYPED_TEST(InnerProductLayerTest, TestImageFillerYForward) {
+  typedef typename TypeParam::Dtype Dtype;
+  bool IS_VALID_CUDA = false;
+#ifndef CPU_ONLY
+  IS_VALID_CUDA = CAFFE_TEST_CUDA_PROP.major >= 2;
+#endif
+  if (Caffe::mode() == Caffe::CPU ||
+      sizeof(Dtype) == 4 || IS_VALID_CUDA) {
+    LayerParameter layer_param;
+    InnerProductParameter* inner_product_param =
+        layer_param.mutable_inner_product_param();
+    inner_product_param->set_num_output(2);
+    inner_product_param->mutable_weight_filler()->set_type("imagexy");
+    inner_product_param->mutable_bias_filler()->set_type("constant");
+    inner_product_param->mutable_bias_filler()->set_value(0);
+    inner_product_param->mutable_weight_filler()->set_channels(2);
+    inner_product_param->mutable_weight_filler()->set_width(10);
+    inner_product_param->mutable_weight_filler()->set_height(10);
+    inner_product_param->mutable_weight_filler()->set_xy("y");
+    shared_ptr<InnerProductLayer<Dtype> > layer(
+        new InnerProductLayer<Dtype>(layer_param));
+    layer->SetUp(this->img_blob_bottom_vec_, this->blob_top_vec_);
+    layer->Forward(this->img_blob_bottom_vec_, this->blob_top_vec_);
+    const Dtype* data = this->blob_top_->cpu_data();
+    const int count = this->blob_top_->count();
+    for (int i = 0; i < count; ++i) {
+      EXPECT_EQ(data[i], 1);
+      // std::cout << data[i] << "\n";
+    }
+  } else {
+    LOG(ERROR) << "Skipping test due to old architecture.";
+  }
+}
+
 TYPED_TEST(InnerProductLayerTest, TestImageFillerForward) {
   typedef typename TypeParam::Dtype Dtype;
   bool IS_VALID_CUDA = false;
@@ -93,6 +127,7 @@ TYPED_TEST(InnerProductLayerTest, TestImageFillerForward) {
     const int count = this->blob_top_->count();
     for (int i = 0; i < count; ++i) {
       EXPECT_EQ(data[i], 1);
+      // std::cout << data[i] << "\n";
     }
   } else {
     LOG(ERROR) << "Skipping test due to old architecture.";

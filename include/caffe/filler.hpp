@@ -152,7 +152,7 @@ class ImageXYFiller : public Filler<Dtype> {
       // Output dimension of fully connected layer should be twice the number of
       // channels, and the input should be the dimension of input images..
       CHECK_EQ(blob->height(), num_channels * 2) << "Blob height: " << blob->height();
-    } else if (xy == "x" || xy == "y") {
+    } else if (xy == "x" || xy == "y" || xy == "ones") {
       CHECK_EQ(blob->height(), num_channels) << "Blob height: " << blob->height();
     } else {
       LOG(FATAL) << "Unknown x/y filler policy: " << xy;
@@ -178,8 +178,9 @@ class ImageXYFiller : public Filler<Dtype> {
               if (c == k) {
                 if (xy == "x") weight_ptr[0] = 2*(Dtype(x+1) / Dtype(num_X) - Dtype(0.5));
                 if (xy == "y") weight_ptr[0] = 2*(Dtype(y+1) / Dtype(num_Y) - Dtype(0.5));
+                if (xy == "ones") weight_ptr[0] = 1;
               } else {
-                weight_ptr[0] = Dtype(0);
+                weight_ptr[0] = 0;
               }
             }
           }
