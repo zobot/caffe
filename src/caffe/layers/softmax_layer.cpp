@@ -27,6 +27,7 @@ void SoftmaxLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
     scale_.Reshape(bottom[0]->num(), 1, bottom[0]->height(), bottom[0]->width());
   } else if (dimension_ == "all") {
     scale_.Reshape(bottom[0]->num(), 1, 1, 1);
+    temp_data_.Reshape(bottom[0]->num(), bottom[0]->channels(), bottom[0]->height(), bottom[0]->width());
   }
 }
 
