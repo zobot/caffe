@@ -304,6 +304,22 @@ static mxArray* vgps_forward_only(const mxArray* const bottom) {
 static mxArray* get_weights_string() {
   NetParameter net_param;
   net_->ToProto(&net_param, false);
+  vector<int> to_remove;
+  for (int i = 0; i < net_param.layers_size(); ++i) {
+    const LayerParameter& layer_param = net_param.layers(i);
+    if (layer_param.type() != LayerParameter::INNER_PRODUCT) continue;
+    const FillerParameter& filler_param = layer_param.inner_product_param().weight_filler();
+    if (filler_param.type() == "imagexy") to_remove.push_back(i);
+  }
+  for (int i = 0; i < to_remove.size(); ++i) {
+    int r = to_remove[i];
+    // swap the element to the end and then remove it.
+    for (int j = r+1; j < net_param.layers_size(); ++j) {
+      net_param.mutable_layers()->SwapElements(j-1, j);
+    }
+    net_param.mutable_layers()->RemoveLast();
+  }
+
   string proto_string;
   google::protobuf::TextFormat::PrintToString(net_param, &proto_string);
   mxArray* mx_out = mxCreateCellMatrix(1, 1);
