@@ -39,8 +39,31 @@ __global__ void kernel_channel_max(const int num, const int channels,
 
 template <typename Dtype>
 __global__ void kernel_pixel_max(const int num, const int channels,
-    const int spatial_dim, const Dtype* data, Dtype* out) {
-  CUDA_KERNEL_LOOP(index, num * channels) {
+    const int spatial_dim, Dtype* data, Dtype* out) {
+ 
+    for (unsigned int step=1; step < spatial_dim; step *= 2)
+    {
+        CUDA_KERNEL_LOOP(index, num * channels * spatial_dim) {
+            // Pull out indices.
+            int n = index / (channels * spatial_dim);
+            int idx = (index % (channels * spatial_dim));
+            int c = idx / spatial_dim;
+            int s = idx % spatial_dim;
+            int index_s_only = n*channels + c;
+
+            // Add.
+            if (((s % (2*step)) == 0) && (s+step < spatial_dim))
+            {
+                data[index] = max(data[index + step],data[index]);
+                if (step*2 >= spatial_dim)
+                    out[index_s_only] = data[index];
+            }
+
+            // Synchronize.
+            __syncthreads();
+        }
+    }
+ /*  CUDA_KERNEL_LOOP(index, num * channels) {
     int n = index / channels;
     int c = index % channels;
     Dtype maxval = -FLT_MAX;
@@ -49,6 +72,7 @@ __global__ void kernel_pixel_max(const int num, const int channels,
     }
     out[index] = maxval;
   }
+  */
 }
 
 template <typename Dtype>
@@ -125,8 +149,30 @@ __global__ void kernel_all_sum(const int num, const int channels,
 
 template <typename Dtype>
 __global__ void kernel_pixel_sum(const int num, const int channels,
-    const int spatial_dim, const Dtype* data, Dtype* pixel_sum) {
-  CUDA_KERNEL_LOOP(index, num * channels) {
+    const int spatial_dim, Dtype* data, Dtype* pixel_sum) {
+    for (unsigned int step=1; step < spatial_dim; step *= 2)
+    {
+        CUDA_KERNEL_LOOP(index, num * channels * spatial_dim) {
+            // Pull out indices.
+            int n = index / (channels * spatial_dim);
+            int idx = (index % (channels * spatial_dim));
+            int c = idx / spatial_dim;
+            int s = idx % spatial_dim;
+            int index_s_only = n*channels + c;
+
+            // Add.
+            if (((s % (2*step)) == 0) && (s+step < spatial_dim))
+            {
+                data[index] += data[index + step];
+                if (step*2 >= spatial_dim)
+                    pixel_sum[index_s_only] = data[index];
+            }
+
+            // Synchronize.
+            __syncthreads();
+        }
+    }
+  /*CUDA_KERNEL_LOOP(index, num * channels) {
     int n = index / channels;
     int c = index % channels;
     Dtype sum = 0;
@@ -134,7 +180,7 @@ __global__ void kernel_pixel_sum(const int num, const int channels,
       sum += data[(n * channels + c) * spatial_dim + s];
     }
     pixel_sum[index] = sum;
-  }
+  }*/
 }
 
 template <typename Dtype>
@@ -234,10 +280,12 @@ void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   // and then normalize.
   caffe_copy(bottom[0]->count(), bottom_data, top_data);
   if (dimension_ == "spatial") {
+    Dtype* temp_data = temp_data_.mutable_gpu_data();
     // compute max
     // NOLINT_NEXT_LINE(whitespace/operators)
-    kernel_pixel_max<Dtype><<<CAFFE_GET_BLOCKS(num * channels),
-        CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
+    caffe_copy(bottom[0]->count(), top_data, temp_data);
+    kernel_pixel_max<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
+        CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, temp_data,
         scale_data);
     // subtract
     // NOLINT_NEXT_LINE(whitespace/operators)
@@ -253,8 +301,9 @@ void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
         top_data);
     // sum after exp
     // NOLINT_NEXT_LINE(whitespace/operators)
-    kernel_pixel_sum<Dtype><<<CAFFE_GET_BLOCKS(num * channels),
-        CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
+    caffe_copy(bottom[0]->count(), top_data, temp_data);
+    kernel_pixel_sum<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
+        CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, temp_data,
         scale_data);
     // divide
     // NOLINT_NEXT_LINE(whitespace/operators)
