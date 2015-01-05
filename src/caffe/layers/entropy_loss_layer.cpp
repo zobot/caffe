@@ -17,7 +17,7 @@ void EntropyLossLayer<Dtype>::LayerSetUp(
 template <typename Dtype>
 void EntropyLossLayer<Dtype>::Reshape(
     const vector<Blob<Dtype>*>& bottom, const vector<Blob<Dtype>*>& top) {
-  LossLayer<Dtype>::Reshape(bottom, top);
+  top[0]->Reshape(1, 1, 1, 1);
 }
 
 template <typename Dtype>
@@ -57,10 +57,6 @@ void EntropyLossLayer<Dtype>::Backward_cpu(
     caffe_scal(count, -loss_weight / num, bottom_diff);
   }
 }
-
-#ifdef CPU_ONLY
-STUB_GPU(EntropyLossLayer);
-#endif
 
 INSTANTIATE_CLASS(EntropyLossLayer);
 REGISTER_LAYER_CLASS(ENTROPY_LOSS, EntropyLossLayer);

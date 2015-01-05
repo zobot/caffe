@@ -735,7 +735,6 @@ class EntropyLossLayer : public LossLayer<Dtype> {
    */
   virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
-
 };
 
 /**

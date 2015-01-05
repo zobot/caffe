@@ -22,26 +22,18 @@ class EntropyLossLayerTest : public MultiDeviceTest<TypeParam> {
  protected:
   EntropyLossLayerTest()
       : blob_bottom_data_(new Blob<Dtype>(10, 5, 1, 1)),
-        blob_bottom_targets_(new Blob<Dtype>(10, 5, 1, 1)),
         blob_top_loss_(new Blob<Dtype>()) {
     // Fill the data vector
     FillerParameter data_filler_param;
-    data_filler_param.set_std(1);
-    GaussianFiller<Dtype> data_filler(data_filler_param);
+    data_filler_param.set_min(0.01);
+    data_filler_param.set_max(1);
+    UniformFiller<Dtype> data_filler(data_filler_param);
     data_filler.Fill(blob_bottom_data_);
     blob_bottom_vec_.push_back(blob_bottom_data_);
-    // Fill the targets vector
-    FillerParameter targets_filler_param;
-    targets_filler_param.set_min(0);
-    targets_filler_param.set_max(1);
-    UniformFiller<Dtype> targets_filler(targets_filler_param);
-    targets_filler.Fill(blob_bottom_targets_);
-    blob_bottom_vec_.push_back(blob_bottom_targets_);
     blob_top_vec_.push_back(blob_top_loss_);
   }
   virtual ~EntropyLossLayerTest() {
     delete blob_bottom_data_;
-    delete blob_bottom_targets_;
     delete blob_top_loss_;
   }
 
@@ -94,7 +86,6 @@ class EntropyLossLayerTest : public MultiDeviceTest<TypeParam> {
   }
 
   Blob<Dtype>* const blob_bottom_data_;
-  Blob<Dtype>* const blob_bottom_targets_;
   Blob<Dtype>* const blob_top_loss_;
   vector<Blob<Dtype>*> blob_bottom_vec_;
   vector<Blob<Dtype>*> blob_top_vec_;
