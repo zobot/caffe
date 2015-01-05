@@ -383,6 +383,7 @@ class SoftmaxLayer : public Layer<Dtype> {
   /// scale is an intermediate Blob to hold temporary results.
   Blob<Dtype> scale_;
   Dtype temp_;
+  string dimension_;
 };
 
 #ifdef USE_CUDNN

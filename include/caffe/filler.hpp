@@ -141,13 +141,22 @@ class ImageXYFiller : public Filler<Dtype> {
     int num_channels = this->filler_param_.channels();
     int num_X = this->filler_param_.width();
     int num_Y = this->filler_param_.height();
+    const string& xy = this->filler_param_.xy();
 
-    // Output dimension of fully connected layer should be twice the number of
-    // channels, and the input should be the dimension of input images..
-    CHECK_EQ(blob->height(), num_channels * 2) << "Blob height: " << blob->height();
-    CHECK_EQ(blob->width(), num_channels * num_X * num_Y) << blob->width() << " != " << num_channels*num_X*num_Y;
+    // paramater blob should be 1x1xhxw where h is determined by number of
+    // channels of the input and w is the dim of the input.
     CHECK_EQ(blob->num(), 1);
     CHECK_EQ(blob->channels(), 1);
+    CHECK_EQ(blob->width(), num_channels * num_X * num_Y) << blob->width() << " != " << num_channels*num_X*num_Y;
+    if (xy == "both") {
+      // Output dimension of fully connected layer should be twice the number of
+      // channels, and the input should be the dimension of input images..
+      CHECK_EQ(blob->height(), num_channels * 2) << "Blob height: " << blob->height();
+    } else if (xy == "x" || xy == "y" || xy == "ones") {
+      CHECK_EQ(blob->height(), num_channels) << "Blob height: " << blob->height();
+    } else {
+      LOG(FATAL) << "Unknown x/y filler policy: " << xy;
+    }
 
     for (int c = 0; c < num_channels; ++c) {
       // One for each feature map.
@@ -157,12 +166,22 @@ class ImageXYFiller : public Filler<Dtype> {
           for (int k = 0; k < blob->height(); ++k) {
             int offset = c*num_X*num_Y + y*num_X + x;
             Dtype* weight_ptr = data + blob->offset(0,0,k, offset);
-            if (c*2 == k) {
-              weight_ptr[0] = 2*(Dtype(x+1) / Dtype(num_X) - Dtype(0.5));
-            } else if (c*2+1 == k) {
-              weight_ptr[0] = 2*(Dtype(y+1) / Dtype(num_Y) - Dtype(0.5));
+            if (xy == "both") {
+              if (c*2 == k) {
+                weight_ptr[0] = 2*(Dtype(x+1) / Dtype(num_X) - Dtype(0.5));
+              } else if (c*2+1 == k) {
+                weight_ptr[0] = 2*(Dtype(y+1) / Dtype(num_Y) - Dtype(0.5));
+              } else {
+                weight_ptr[0] = Dtype(0);
+              }
             } else {
-              weight_ptr[0] = Dtype(0);
+              if (c == k) {
+                if (xy == "x") weight_ptr[0] = 2*(Dtype(x+1) / Dtype(num_X) - Dtype(0.5));
+                if (xy == "y") weight_ptr[0] = 2*(Dtype(y+1) / Dtype(num_Y) - Dtype(0.5));
+                if (xy == "ones") weight_ptr[0] = 1;
+              } else {
+                weight_ptr[0] = 0;
+              }
             }
           }
         }

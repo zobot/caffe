@@ -10,20 +10,29 @@ namespace caffe {
 template <typename Dtype>
 void SoftmaxLayer<Dtype>::Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
-  top[0]->Reshape(bottom[0]->num(), bottom[0]->channels(),
-      bottom[0]->height(), bottom[0]->width());
   sum_multiplier_.Reshape(1, bottom[0]->channels(), 1, 1);
   Dtype* multiplier_data = sum_multiplier_.mutable_cpu_data();
   for (int i = 0; i < sum_multiplier_.count(); ++i) {
     multiplier_data[i] = 1.;
   }
   temp_ = Dtype(1.0) / this->layer_param_.softmax_param().temperature();
-  scale_.Reshape(bottom[0]->num(), 1, bottom[0]->height(), bottom[0]->width());
+  dimension_ = this->layer_param_.softmax_param().dimension();
+  top[0]->Reshape(bottom[0]->num(), bottom[0]->channels(),
+    bottom[0]->height(), bottom[0]->width());
+  if (dimension_ == "spatial") {
+    // spatial uses the scale data differently
+    scale_.Reshape(bottom[0]->num(), bottom[0]->channels(), 1, 1);
+  } else if (dimension_ == "channel") {
+    scale_.Reshape(bottom[0]->num(), 1, bottom[0]->height(), bottom[0]->width());
+  } else if (dimension_ == "all") {
+    scale_.Reshape(bottom[0]->num(), 1, 1, 1);
+  }
 }
 
 template <typename Dtype>
 void SoftmaxLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     const vector<Blob<Dtype>*>& top) {
+  if (dimension_ == "spatial" || dimension_ == "all") LOG(FATAL) << "Unimplemented";
   const Dtype* bottom_data = bottom[0]->cpu_data();
   Dtype* top_data = top[0]->mutable_cpu_data();
   Dtype* scale_data = scale_.mutable_cpu_data();

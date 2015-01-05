@@ -44,6 +44,7 @@ message FillerParameter {
   optional int32 channels = 8 [default = -1];
   optional int32 width = 9 [default = -1];
   optional int32 height = 10 [default = -1];
+  optional string xy = 11 [default = 'both'];
 }
 
 message NetParameter {
@@ -689,6 +690,7 @@ message SoftmaxParameter {
   }
   optional Engine engine = 1 [default = DEFAULT];
   optional float temperature = 2 [default = 1.0];
+  optional string dimension = 3 [default = "spatial"]; // spatial, channel, or all
 }
 
 // Message that stores parameters used by TanHLayer

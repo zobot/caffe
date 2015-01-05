@@ -2,12 +2,10 @@ name: "JointAndImageStateRegressionNet"
 layers {
   name: "data"
   type: HDF5_DATA
-  top: "joint_states"
-  top: "loss_weights"
-  top: "output_torques"
+  top: "position"
   top: "rgb_frames"
   hdf5_data_param {
-    source: "examples/vgps/train_9tgt_shuff.txt"
+    source: "examples/vgps/train_pose.txt"
     batch_size: 25
   }
   include: { phase: TRAIN }
@@ -15,13 +13,11 @@ layers {
 layers {
   name: "data"
   type: HDF5_DATA
-  top: "joint_states"
-  top: "output_torques"
-  top: "loss_weights"
+  top: "position"
   top: "rgb_frames"
   hdf5_data_param {
-    source: "examples/vgps/val_9tgt_shuff_copy.txt"
-    batch_size: 25
+    source: "examples/vgps/val_pose.txt"
+    batch_size: 5
   }
   include: {
     phase: TEST
@@ -31,13 +27,11 @@ layers {
 layers {
   name: "data"
   type: HDF5_DATA
-  top: "joint_states"
-  top: "output_torques"
-  top: "loss_weights"
+  top: "position"
   top: "rgb_frames"
   hdf5_data_param {
-    source: "examples/vgps/train_9tgt_shuff_copy.txt"
-    batch_size: 25
+    source: "examples/vgps/train_pose.txt"
+    batch_size: 5
   }
   include: {
     phase: TEST
@@ -50,8 +44,8 @@ layers {
   type: CONVOLUTION
   bottom: "rgb_frames"
   top: "conv1"
-  blobs_lr: 100
-  blobs_lr: 200
+  blobs_lr: 10
+  blobs_lr: 20
   weight_decay: 0
   weight_decay: 0
   convolution_param {
@@ -79,8 +73,8 @@ layers {
   type: CONVOLUTION
   bottom: "conv1"
   top: "conv2"
-  blobs_lr: 100
-  blobs_lr: 200
+  blobs_lr: 10
+  blobs_lr: 20
   weight_decay: 0
   weight_decay: 0
   convolution_param {
@@ -108,8 +102,8 @@ layers {
   type: CONVOLUTION
   bottom: "conv2"
   top: "conv3"
-  blobs_lr: 100
-  blobs_lr: 200
+  blobs_lr: 10
+  blobs_lr: 20
   weight_decay: 0
   weight_decay: 0
   convolution_param {
@@ -139,7 +133,7 @@ layers {
   top: "conv3"
   softmax_param {
     engine: CAFFE
-    temperature: 1.0
+    temperature: 0.1
   }
 }
 layers {
@@ -165,116 +159,33 @@ layers {
     }
   }
 }
-#layers {
-  #name: "fc1_smaller"
-  #type: INNER_PRODUCT
-  #bottom: "image_features"
-  #top: "image_features_smaller"
-  #blobs_lr: 5
-  #blobs_lr: 10
-  #weight_decay: 1
-  #weight_decay: 0
-  #inner_product_param {
-    #num_output: 10
-    #weight_filler {
-      #type: "gaussian"
-      #std: 0.01
-    #}
-    #bias_filler {
-      #type: "constant"
-      #value: 0
-    #}
-  #}
-#}
-# Concat image layers and joint states
 layers {
-  name: "concat_img_joint"
-  type: CONCAT
-  bottom: "joint_states"
+  name: "fc1_smaller"
+  type: INNER_PRODUCT
   bottom: "image_features"
-  top: "concat_img_joint"
+  top: "image_features_smaller"
+  blobs_lr: 5
+  blobs_lr: 10
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 3
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
 }
 
-layers {
-  name: "fc1_both"
-  type: INNER_PRODUCT
-  bottom: "concat_img_joint"
-  top: "fc1_both"
-  blobs_lr: 5
-  blobs_lr: 10
-  weight_decay: 1
-  weight_decay: 0
-  inner_product_param {
-    num_output: 40
-    weight_filler {
-      type: "gaussian"
-      std: 0.01
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layers {
-  name: "relu2_both"
-  type: RELU
-  bottom: "fc1_both"
-  top: "fc1_both"
-}
-layers {
-  name: "fc2_both"
-  type: INNER_PRODUCT
-  bottom: "fc1_both"
-  top: "fc2_both"
-  blobs_lr: 5
-  blobs_lr: 10
-  weight_decay: 1
-  weight_decay: 0
-  inner_product_param {
-    num_output: 40
-    weight_filler {
-      type: "gaussian"
-      std: 0.01
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layers {
-  name: "relu3_both"
-  type: RELU
-  bottom: "fc2_both"
-  top: "fc2_both"
-}
-layers {
-  name: "fc3_both"
-  type: INNER_PRODUCT
-  bottom: "fc2_both"
-  top: "fc3_both"
-  blobs_lr: 5
-  blobs_lr: 10
-  weight_decay: 1
-  weight_decay: 0
-  inner_product_param {
-    num_output: 7
-    weight_filler {
-      type: "gaussian"
-      std: 0.01
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
+
 layers {
   name: "loss"
-  type: WEIGHTED_EUCLIDEAN_LOSS
-  bottom: "fc3_both"
-  bottom: "output_torques"
-  bottom: "loss_weights"
+  type: EUCLIDEAN_LOSS
+  bottom: "image_features_smaller"
+  bottom: "position"
   top: "euclidean_error"
 }
