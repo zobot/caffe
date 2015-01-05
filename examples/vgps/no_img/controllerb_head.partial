@@ -6,7 +6,7 @@ layers {
   top: "joint_input"
   memory_data_param {
     batch_size: 1
-    channels1: 64
+    channels1: 1
     channels2: 39
   }
 }
