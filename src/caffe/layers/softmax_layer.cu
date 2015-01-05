@@ -54,12 +54,12 @@ __global__ void kernel_pixel_max(const int num, const int channels,
 template <typename Dtype>
 __global__ void kernel_all_subtract(const int num, const int channels,
     const int spatial_dim, Dtype* data, const Dtype* channel_max) {
-  CUDA_KERNEL_LOOP(n, num) {
-    for (int c = 0; c < channels; ++c) {
-      for (int s = 0; s < spatial_dim; ++s) {
-        data[(n * channels + c) * spatial_dim + s] -= channel_max[n];
-      }
-    }
+  CUDA_KERNEL_LOOP(index, num * channels * spatial_dim) {
+    int n = index / (channels * spatial_dim);
+    int idx = (index % (channels * spatial_dim));
+    int c = idx / spatial_dim;
+    int s = idx % spatial_dim;
+    data[(n * channels + c) * spatial_dim + s] -= channel_max[n];
   }
 }
 
@@ -78,12 +78,13 @@ __global__ void kernel_channel_subtract(const int num, const int channels,
 template <typename Dtype>
 __global__ void kernel_pixel_subtract(const int num, const int channels,
     const int spatial_dim, Dtype* data, const Dtype* pixel_max) {
-  CUDA_KERNEL_LOOP(index, num * channels) {
-    int n = index / channels;
-    int c = index % channels;
-    for (int s = 0; s < spatial_dim; ++s) {
-      data[(n * channels + c) * spatial_dim + s] -= pixel_max[index];
-    }
+  CUDA_KERNEL_LOOP(index, num * channels * spatial_dim) {
+    int n = index / (channels * spatial_dim);
+    int idx = (index % (channels * spatial_dim));
+    int c = idx / spatial_dim;
+    int s = idx % spatial_dim;
+    int index_s_only = n*channels + c;
+    data[(n * channels + c) * spatial_dim + s] -= pixel_max[index_s_only];
   }
 }
 
@@ -151,26 +152,25 @@ __global__ void kernel_channel_div(const int num, const int channels,
 template <typename Dtype>
 __global__ void kernel_all_div(const int num, const int channels,
     const int spatial_dim, Dtype* data, const Dtype* all_sum) {
-  CUDA_KERNEL_LOOP(n, num) {
-    for (int c = 0; c < channels; ++c) {
-      for (int s = 0; s < spatial_dim; ++s) {
-        data[(n * channels + c) * spatial_dim + s] /= all_sum[n];
-      }
-    }
+  CUDA_KERNEL_LOOP(index, num * channels * spatial_dim) {
+    int n = index / (channels * spatial_dim);
+    int idx = (index % (channels * spatial_dim));
+    int c = idx / spatial_dim;
+    int s = idx % spatial_dim;
+    data[(n * channels + c) * spatial_dim + s] /= all_sum[n];
   }
 }
 
 template <typename Dtype>
 __global__ void kernel_pixel_div(const int num, const int channels,
     const int spatial_dim, Dtype* data, const Dtype* pixel_sum) {
-  CUDA_KERNEL_LOOP(index, num * channels) {
-    int n = index / channels;
-    int c = index % channels;
-    // int offset = (n*channels+c)*spatial_dim;
-    // caffe_gpu_axpby(spatial_dim, Dtype(1.0)/pixel_sum[index], data+offset, Dtype(0.0), data+offset);
-    for (int s = 0; s < spatial_dim; ++s) {
-      data[(n * channels + c) * spatial_dim + s] /= pixel_sum[index];
-    }
+  CUDA_KERNEL_LOOP(index, num * channels * spatial_dim) {
+    int n = index / (channels * spatial_dim);
+    int idx = (index % (channels * spatial_dim));
+    int c = idx / spatial_dim;
+    int s = idx % spatial_dim;
+    int index_s_only = n*channels + c;
+    data[(n * channels + c) * spatial_dim + s] /= pixel_sum[index_s_only];
   }
 }
 
@@ -241,7 +241,7 @@ void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
         scale_data);
     // subtract
     // NOLINT_NEXT_LINE(whitespace/operators)
-    kernel_pixel_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * channels),
+    kernel_pixel_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
         CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
         scale_data);
     // divide by temperature
@@ -258,7 +258,7 @@ void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
         scale_data);
     // divide
     // NOLINT_NEXT_LINE(whitespace/operators)
-    kernel_pixel_div<Dtype><<<CAFFE_GET_BLOCKS(num * channels),
+    kernel_pixel_div<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
         CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
         scale_data);
   } else if (dimension_ == "channel") {
@@ -297,7 +297,7 @@ void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
         scale_data);
     // subtract
     // NOLINT_NEXT_LINE(whitespace/operators)
-    kernel_all_subtract<Dtype><<<CAFFE_GET_BLOCKS(num),
+    kernel_all_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
         CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
         scale_data);
     // divide by temperature
@@ -314,7 +314,7 @@ void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
         scale_data);
     // divide
     // NOLINT_NEXT_LINE(whitespace/operators)
-    kernel_all_div<Dtype><<<CAFFE_GET_BLOCKS(num),
+    kernel_all_div<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
         CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_data,
         scale_data);
   } else {
@@ -340,7 +340,7 @@ void SoftmaxLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
         CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_diff, top_data,
         scale_data);
     // NOLINT_NEXT_LINE(whitespace/operators)
-    kernel_pixel_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * channels),
+    kernel_pixel_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
         CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, bottom_diff,
         scale_data);
   } else if (dimension_ == "channel") {
@@ -358,7 +358,7 @@ void SoftmaxLayer<Dtype>::Backward_gpu(const vector<Blob<Dtype>*>& top,
         CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, top_diff, top_data,
         scale_data);
     // NOLINT_NEXT_LINE(whitespace/operators)
-    kernel_all_subtract<Dtype><<<CAFFE_GET_BLOCKS(num),
+    kernel_all_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
         CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, bottom_diff,
         scale_data);
   }
