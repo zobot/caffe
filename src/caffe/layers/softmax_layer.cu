@@ -39,9 +39,33 @@ __global__ void kernel_channel_max(const int num, const int channels,
 
 template <typename Dtype>
 __global__ void kernel_pixel_max(const int num, const int channels,
-    const int spatial_dim, Dtype* data, Dtype* out) {
- 
+    const int spatial_dim, const int p2spatial_dim, Dtype* data, Dtype* out) {
     for (unsigned int step=1; step < spatial_dim; step *= 2)
+    {
+        int scaled_spatial_dim = p2spatial_dim/(2*step);
+        for (int index = blockIdx.x*blockDim.x + threadIdx.x;
+             index < num * channels * scaled_spatial_dim;
+             index += blockDim.x * gridDim.x) {
+            int n = index / (channels * scaled_spatial_dim);
+            int idx = (index % (channels * scaled_spatial_dim));
+            int c = idx / scaled_spatial_dim;
+            int s = (idx % scaled_spatial_dim)*step*2;
+            int index_s_only = n*channels + c;
+            int index_data = (n * channels + c) * spatial_dim + s;
+            
+            // Add.
+            if (s + step < spatial_dim) {
+                data[index_data] = max(data[index_data],data[index_data + step]);
+                if (step*2 >= spatial_dim)
+                    out[index_s_only] = data[index_data];
+            }
+
+            // Synchronize.
+            __syncthreads();
+        }
+    }        
+  
+/*    for (unsigned int step=1; step < spatial_dim; step *= 2)
     {
         CUDA_KERNEL_LOOP(index, num * channels * spatial_dim) {
             // Pull out indices.
@@ -62,7 +86,7 @@ __global__ void kernel_pixel_max(const int num, const int channels,
             // Synchronize.
             __syncthreads();
         }
-    }
+    }*/
  /*  CUDA_KERNEL_LOOP(index, num * channels) {
     int n = index / channels;
     int c = index % channels;
@@ -149,10 +173,32 @@ __global__ void kernel_all_sum(const int num, const int channels,
 
 template <typename Dtype>
 __global__ void kernel_pixel_sum(const int num, const int channels,
-    const int spatial_dim, Dtype* data, Dtype* pixel_sum) {
+    const int spatial_dim, const int p2spatial_dim, Dtype* data, Dtype* pixel_sum) {
     for (unsigned int step=1; step < spatial_dim; step *= 2)
     {
-        CUDA_KERNEL_LOOP(index, num * channels * spatial_dim) {
+        int scaled_spatial_dim = p2spatial_dim/(2*step);
+        for (int index = blockIdx.x*blockDim.x + threadIdx.x;
+             index < num * channels * scaled_spatial_dim;
+             index += blockDim.x * gridDim.x) {
+            int n = index / (channels * scaled_spatial_dim);
+            int idx = (index % (channels * scaled_spatial_dim));
+            int c = idx / scaled_spatial_dim;
+            int s = (idx % scaled_spatial_dim)*step*2;
+            int index_s_only = n*channels + c;
+            int index_data = (n * channels + c) * spatial_dim + s;
+            
+            // Add.
+            if (s + step < spatial_dim) {
+                data[index_data] += data[index_data + step];
+                if (step*2 >= spatial_dim)
+                    pixel_sum[index_s_only] = data[index_data];
+            }
+
+            // Synchronize.
+            __syncthreads();
+        }
+    }        
+        /*CUDA_KERNEL_LOOP(index, num * channels * spatial_dim) {
             // Pull out indices.
             int n = index / (channels * spatial_dim);
             int idx = (index % (channels * spatial_dim));
@@ -170,8 +216,7 @@ __global__ void kernel_pixel_sum(const int num, const int channels,
 
             // Synchronize.
             __syncthreads();
-        }
-    }
+        }*/
   /*CUDA_KERNEL_LOOP(index, num * channels) {
     int n = index / channels;
     int c = index % channels;
@@ -276,6 +321,7 @@ void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   int num = bottom[0]->num();
   int channels = bottom[0]->channels();
   int spatial_dim = bottom[0]->height() * bottom[0]->width();
+  int p2spatial_dim = pow(2,(int)ceil(log2((float)spatial_dim)));
   // We need to subtract the max to avoid numerical issues, compute the exp,
   // and then normalize.
   caffe_copy(bottom[0]->count(), bottom_data, top_data);
@@ -285,8 +331,8 @@ void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
     // NOLINT_NEXT_LINE(whitespace/operators)
     caffe_copy(bottom[0]->count(), top_data, temp_data);
     kernel_pixel_max<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
-        CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, temp_data,
-        scale_data);
+        CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, p2spatial_dim,
+        temp_data, scale_data);
     // subtract
     // NOLINT_NEXT_LINE(whitespace/operators)
     kernel_pixel_subtract<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
@@ -303,8 +349,8 @@ void SoftmaxLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
     // NOLINT_NEXT_LINE(whitespace/operators)
     caffe_copy(bottom[0]->count(), top_data, temp_data);
     kernel_pixel_sum<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
-        CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, temp_data,
-        scale_data);
+        CAFFE_CUDA_NUM_THREADS>>>(num, channels, spatial_dim, p2spatial_dim,
+        temp_data, scale_data);
     // divide
     // NOLINT_NEXT_LINE(whitespace/operators)
     kernel_pixel_div<Dtype><<<CAFFE_GET_BLOCKS(num * channels * spatial_dim),
