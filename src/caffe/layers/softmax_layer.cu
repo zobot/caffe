@@ -166,6 +166,8 @@ __global__ void kernel_pixel_div(const int num, const int channels,
   CUDA_KERNEL_LOOP(index, num * channels) {
     int n = index / channels;
     int c = index % channels;
+    // int offset = (n*channels+c)*spatial_dim;
+    // caffe_gpu_axpby(spatial_dim, Dtype(1.0)/pixel_sum[index], data+offset, Dtype(0.0), data+offset);
     for (int s = 0; s < spatial_dim; ++s) {
       data[(n * channels + c) * spatial_dim + s] /= pixel_sum[index];
     }
