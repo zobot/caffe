@@ -3,6 +3,8 @@
 # Define the input files
 RGB_NET=matnet_rgb.partial
 JOINT_NET=matnet_joints.partial
+RTRAIN_NET_HEAD=remotetrain_head.partial
+RTRAIN_NET_FOOT=remotetrain_foot.partial
 TRAIN_NET_HEAD=mattrain_head.partial
 TRAIN_NET_FOOT=mattrain_foot.partial
 TEST_NET_HEAD=matforward_head.partial
@@ -13,6 +15,7 @@ ROBOT_B_HEAD=controllerb_head.partial
 ROBOT_B_FOOT=controllerb_foot.partial
 
 # Define the output files
+RTRAIN_NET=remotetrain.prototxt
 TRAIN_NET=mattrain_val_rgb.prototxt
 TEST_NET=matforward_rgb.prototxt
 ROBOT_A=controller_forwarda.prototxt
@@ -26,6 +29,7 @@ echo "The following files contain footers: $TRAIN_NET_FOOT $TEST_NET_FOOT $ROBOT
 echo "The following files will be created: $TRAIN_NET $TEST_NET $ROBOT_A $ROBOT_B"
 
 # Assemble the files
+cat $RTRAIN_NET_HEAD $RGB_NET $JOINT_NET $RTRAIN_NET_FOOT > $RTRAIN_NET
 cat $TRAIN_NET_HEAD $RGB_NET $JOINT_NET $TRAIN_NET_FOOT > $TRAIN_NET
 cat $TEST_NET_HEAD $RGB_NET $JOINT_NET $TEST_NET_FOOT > $TEST_NET
 cat $ROBOT_A_HEAD $RGB_NET $ROBOT_A_FOOT > $ROBOT_A
