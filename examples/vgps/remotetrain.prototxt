@@ -1,16 +1,17 @@
 name: "JointAndImageStateRegressionNet"
 layers {
-  name: "data_in"
-  type: MEMORY_DATA
+  name: "data"
+  type: HDF5_DATA
+  top: "joint_input"
+  top: "action_input"
   top: "rgb_input"
-  memory_data_param {
-    batch_size: 1
-    channels1: 3
-    width1: 240
-    height1: 240
+  top: "prec_input"
+  hdf5_data_param {
+    source: "remotetrain.txt"
+    batch_size: 50
   }
+  include: { phase: TRAIN }
 }
-
 # Image Processing Layers
 layers {
   name: "conv1"
@@ -131,5 +132,100 @@ layers {
       value: 0
     }
   }
+}
+
+# Concat image layers and joint states
+layers {
+  name: "concat_img_joint"
+  type: CONCAT
+  bottom: "joint_input"
+  bottom: "image_features"
+  top: "concat_img_joint"
+}
+
+layers {
+  name: "fc1_both"
+  type: INNER_PRODUCT
+  bottom: "concat_img_joint"
+  top: "fc1_both"
+  blobs_lr: 2
+  blobs_lr: 4
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 40
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layers {
+  name: "relu2_both"
+  type: RELU
+  bottom: "fc1_both"
+  top: "fc1_both"
+}
+layers {
+  name: "fc2_both"
+  type: INNER_PRODUCT
+  bottom: "fc1_both"
+  top: "fc2_both"
+  blobs_lr: 2
+  blobs_lr: 4
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 40
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layers {
+  name: "relu3_both"
+  type: RELU
+  bottom: "fc2_both"
+  top: "fc2_both"
+}
+layers {
+  name: "fc3_both"
+  type: INNER_PRODUCT
+  bottom: "fc2_both"
+  top: "nn_output"
+  blobs_lr: 2
+  blobs_lr: 4
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 7
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layers {
+  name: "loss"
+  type: WEIGHTED_EUCLIDEAN_LOSS
+  bottom: "nn_output"
+  bottom: "action_input"
+  bottom: "prec_input"
+  top: "euclidean_error"
+  include: { phase: TRAIN }
 }
 

@@ -24,7 +24,7 @@ layers {
   top: "conv1"
   blobs_lr: 1
   blobs_lr: 2
-  weight_decay: 1
+  weight_decay: 0
   weight_decay: 0
   convolution_param {
     num_output: 32
@@ -111,7 +111,7 @@ layers {
   top: "image_out"
   softmax_param {
     engine: CAFFE
-    temperature: 0.01
+    temperature: 1.0
   }
 }
 layers {
@@ -152,8 +152,8 @@ layers {
   type: INNER_PRODUCT
   bottom: "concat_img_joint"
   top: "fc1_both"
-  blobs_lr: 5
-  blobs_lr: 10
+  blobs_lr: 2
+  blobs_lr: 4
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
@@ -179,8 +179,8 @@ layers {
   type: INNER_PRODUCT
   bottom: "fc1_both"
   top: "fc2_both"
-  blobs_lr: 5
-  blobs_lr: 10
+  blobs_lr: 2
+  blobs_lr: 4
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
@@ -206,8 +206,8 @@ layers {
   type: INNER_PRODUCT
   bottom: "fc2_both"
   top: "nn_output"
-  blobs_lr: 5
-  blobs_lr: 10
+  blobs_lr: 2
+  blobs_lr: 4
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
