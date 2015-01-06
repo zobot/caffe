@@ -6,7 +6,7 @@ layers {
   top: "conv1"
   blobs_lr: 1
   blobs_lr: 2
-  weight_decay: 1
+  weight_decay: 0
   weight_decay: 0
   convolution_param {
     num_output: 32
@@ -93,7 +93,7 @@ layers {
   top: "image_out"
   softmax_param {
     engine: CAFFE
-    temperature: 0.01
+    temperature: 1.0
   }
 }
 layers {

@@ -4,7 +4,7 @@ layers {
   type: HDF5_DATA
   top: "joint_input"
   top: "action_input"
-  top: "action_input"
+  top: "rgb_input"
   top: "prec_input"
   hdf5_data_param {
     source: "remotetrain.txt"

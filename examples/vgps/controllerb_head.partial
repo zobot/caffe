@@ -4,6 +4,8 @@ layers {
   type: MEMORY_DATA
   top: "image_features"
   top: "joint_input"
+  top: "zzzzzzzzzz"
+  top: "zzzzzzzzz"
   memory_data_param {
     batch_size: 1
     channels1: 64
