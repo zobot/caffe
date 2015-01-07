@@ -38,11 +38,21 @@ layers {
     stage: 'test-on-train'
   }
 }
+layers {
+  name: "mvn"
+  type: MVN
+  bottom: "rgb_frames"
+  top: "rgb_mvn"
+  mvn_param {
+    across_channels: false
+    normalize_variance: true
+  }
+}
 # Image Processing Layers
 layers {
   name: "conv1/7x7_s2"
   type: CONVOLUTION
-  bottom: "rgb_frames"
+  bottom: "rgb_mvn"
   top: "conv1"
   blobs_lr: 1
   blobs_lr: 2
@@ -130,7 +140,7 @@ layers {
   name: "softmax"
   type: SOFTMAX
   bottom: "conv3"
-  top: "conv3"
+  top: "image_out"
   softmax_param {
     engine: CAFFE
     temperature: 1.0
@@ -138,9 +148,17 @@ layers {
   }
 }
 layers {
+  name: "softmax_lowentr"
+  type: ENTROPY_LOSS
+  bottom: "image_out"
+  top: "entropy_loss"
+  loss_weight: 0
+}
+
+layers {
   name: "fc_images"
   type: INNER_PRODUCT
-  bottom: "conv3"
+  bottom: "image_out"
   top: "image_features"
   blobs_lr: 0
   blobs_lr: 0
@@ -189,4 +207,5 @@ layers {
   bottom: "image_features_smaller"
   bottom: "position"
   top: "euclidean_error"
+  loss_weight: 1
 }

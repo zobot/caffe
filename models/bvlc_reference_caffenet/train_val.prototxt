@@ -5,15 +5,15 @@ layers {
   top: "data"
   top: "label"
   data_param {
-    source: "examples/imagenet/ilsvrc12_train_lmdb"
-    backend: LMDB
+    source: "/x/data/ilsvrc_2012/caffe-train-leveldb"
+    #backend: LEVELDB
     batch_size: 256
   }
-  transform_param {
-    crop_size: 227
-    mean_file: "data/ilsvrc12/imagenet_mean.binaryproto"
-    mirror: true
-  }
+#  transform_param {
+#    crop_size: 227
+#    mean_file: "data/ilsvrc12/imagenet_mean.binaryproto"
+#    mirror: true
+#  }
 # mean pixel / channel-wise mean instead of mean image
 #  transform_param {
 #    crop_size: 227
@@ -30,15 +30,15 @@ layers {
   top: "data"
   top: "label"
   data_param {
-    source: "examples/imagenet/ilsvrc12_val_lmdb"
-    backend: LMDB
+    source: "/x/data/ilsvrc_2012/caffe-val-leveldb"
+    #backend: LEVELDB
     batch_size: 50
   }
-  transform_param {
-    crop_size: 227
-    mean_file: "data/ilsvrc12/imagenet_mean.binaryproto"
-    mirror: false
-  }
+#  transform_param {
+#    crop_size: 227
+#    mean_file: "data/ilsvrc12/imagenet_mean.binaryproto"
+#    mirror: false
+#  }
 # mean pixel / channel-wise mean instead of mean image
 #  transform_param {
 #    crop_size: 227
