@@ -40,7 +40,7 @@ layers {
 }
 # Image Processing Layers
 layers {
-  name: "conv1"
+  name: "conv1/7x7_s2"
   type: CONVOLUTION
   bottom: "rgb_frames"
   top: "conv1"
@@ -49,8 +49,8 @@ layers {
   weight_decay: 0
   weight_decay: 0
   convolution_param {
-    num_output: 32
-    kernel_size: 11
+    num_output: 64
+    kernel_size: 7
     stride: 2
     weight_filler {
       type: "gaussian"
@@ -133,7 +133,7 @@ layers {
   top: "conv3"
   softmax_param {
     engine: CAFFE
-    temperature: 0.1
+    temperature: 1.0
     dimension: "spatial"
   }
 }
@@ -151,8 +151,8 @@ layers {
     weight_filler {
       type: "imagexy"
       channels: 32
-      width: 107
-      height: 107
+      width: 109
+      height: 109
     }
     bias_filler {
       type: "constant"
@@ -170,7 +170,7 @@ layers {
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
-    num_output: 3
+    num_output: 9
     weight_filler {
       type: "gaussian"
       std: 0.01
