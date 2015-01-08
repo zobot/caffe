@@ -233,7 +233,7 @@ message LayerParameter {
   // line above the enum. Update the next available ID when you add a new
   // LayerType.
   //
-  // LayerType next available ID: 41 (last added: ENTROPY_LOSS)
+  // LayerType next available ID: 42 (last added: EUCLIDEAN_DISTANCE)
   enum LayerType {
     // "NONE" layer type is 0th enum element so that we don't cause confusion
     // by defaulting to an existent LayerType (instead, should usually error if
@@ -249,6 +249,7 @@ message LayerParameter {
     DATA = 5;
     DROPOUT = 6;
     DUMMY_DATA = 32;
+    EUCLIDEAN_DISTANCE = 41;
     EUCLIDEAN_LOSS = 7;
     ELTWISE = 25;
     ENTROPY_LOSS = 40;
