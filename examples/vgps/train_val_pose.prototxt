@@ -21,6 +21,20 @@ layers {
   }
   include: {
     phase: TEST
+    stage: 'test-on-val'
+  }
+}
+layers {
+  name: "data"
+  type: HDF5_DATA
+  top: "position"
+  top: "rgb_frames"
+  hdf5_data_param {
+    source: "examples/vgps/test_pose.txt"
+    batch_size: 5
+  }
+  include: {
+    phase: TEST
     stage: 'test-on-test'
   }
 }
@@ -46,7 +60,7 @@ layers {
   top: "conv1"
   blobs_lr: 1
   blobs_lr: 2
-  weight_decay: 0
+  weight_decay: 2
   weight_decay: 0
   convolution_param {
     num_output: 64
@@ -75,7 +89,7 @@ layers {
   top: "conv2"
   blobs_lr: 1
   blobs_lr: 2
-  weight_decay: 0
+  weight_decay: 2
   weight_decay: 0
   convolution_param {
     num_output: 32
@@ -104,7 +118,7 @@ layers {
   top: "conv3"
   blobs_lr: 1
   blobs_lr: 2
-  weight_decay: 0
+  weight_decay: 2
   weight_decay: 0
   convolution_param {
     num_output: 32

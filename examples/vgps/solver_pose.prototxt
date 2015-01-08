@@ -1,6 +1,8 @@
 net: "examples/vgps/train_val_pose.prototxt"
 solver_type: SGD
 test_state: { stage: 'test-on-test' }
+test_iter: 200
+test_state: { stage: 'test-on-val' }
 test_iter: 20
 test_state: { stage: 'test-on-train' }
 test_iter: 180
@@ -14,5 +16,5 @@ max_iter: 12000
 momentum: 0.9
 weight_decay: 0.005
 snapshot: 500
-snapshot_prefix: "examples/vgps/snapshot/pose_gaussian_pretrain_pts_temp1_constmean"
+snapshot_prefix: "examples/vgps/snapshot/pose_gaussian_nopretrain_pts_temp1_constmean_moredecay"
 solver_mode: GPU
