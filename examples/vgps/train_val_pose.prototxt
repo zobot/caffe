@@ -24,20 +24,20 @@ layers {
     stage: 'test-on-val'
   }
 }
-layers {
-  name: "data"
-  type: HDF5_DATA
-  top: "position"
-  top: "rgb_frames"
-  hdf5_data_param {
-    source: "examples/vgps/test_pose.txt"
-    batch_size: 5
-  }
-  include: {
-    phase: TEST
-    stage: 'test-on-test'
-  }
-}
+#layers {
+  #name: "data"
+  #type: HDF5_DATA
+  #top: "position"
+  #top: "rgb_frames"
+  #hdf5_data_param {
+    #source: "examples/vgps/test_pose.txt"
+    #batch_size: 5
+  #}
+  #include: {
+    #phase: TEST
+    #stage: 'test-on-test'
+  #}
+#}
 layers {
   name: "data"
   type: HDF5_DATA
@@ -52,21 +52,11 @@ layers {
     stage: 'test-on-train'
   }
 }
-layers {
-  name: "mvn"
-  type: MVN
-  bottom: "rgb_frames"
-  top: "rgb_mvn"
-  mvn_param {
-    across_channels: false
-    normalize_variance: true
-  }
-}
 # Image Processing Layers
 layers {
   name: "conv1/7x7_s2"
   type: CONVOLUTION
-  bottom: "rgb_mvn"
+  bottom: "rgb_frames"
   top: "conv1"
   blobs_lr: 1
   blobs_lr: 2
@@ -154,25 +144,25 @@ layers {
   name: "softmax"
   type: SOFTMAX
   bottom: "conv3"
-  top: "image_out"
+  top: "conv3"
   softmax_param {
     engine: CAFFE
     temperature: 1.0
     dimension: "spatial"
   }
 }
-layers {
-  name: "softmax_lowentr"
-  type: ENTROPY_LOSS
-  bottom: "image_out"
-  top: "entropy_loss"
-  loss_weight: 0
-}
+#layers {
+  #name: "softmax_lowentr"
+  #type: ENTROPY_LOSS
+  #bottom: "image_out"
+  #top: "entropy_loss"
+  #loss_weight: 0
+#}
 
 layers {
   name: "fc_images"
   type: INNER_PRODUCT
-  bottom: "image_out"
+  bottom: "conv3"
   top: "image_features"
   blobs_lr: 0
   blobs_lr: 0
@@ -213,7 +203,14 @@ layers {
     }
   }
 }
-
+layers {
+  name: "euc_distance"
+  type: EUCLIDEAN_DISTANCE
+  bottom: "image_features_smaller"
+  bottom: "position"
+  top: "average_distance"
+  include: {phase: TEST}
+}
 
 layers {
   name: "loss"
