@@ -242,6 +242,12 @@ void Net<Dtype>::FilterNet(const NetParameter& param,
       case Caffe::FORWARDB:
         net_state.set_phase(FORWARDB);
         break;
+      case Caffe::TRAINA:
+        net_state.set_phase(TRAINA);
+        break;
+      case Caffe::TRAINB:
+        net_state.set_phase(TRAINB);
+        break;
       default:
         LOG(FATAL) << "Unknown phase: " << Caffe::phase();
     }
