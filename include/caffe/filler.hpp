@@ -148,7 +148,7 @@ class ImageXYFiller : public Filler<Dtype> {
     CHECK_EQ(blob->num(), 1);
     CHECK_EQ(blob->channels(), 1);
     CHECK_EQ(blob->width(), num_channels * num_X * num_Y) << blob->width() << " != " << num_channels*num_X*num_Y;
-    if (xy == "both") {
+    if (xy == "both" || xy == "both2") {
       // Output dimension of fully connected layer should be twice the number of
       // channels, and the input should be the dimension of input images..
       CHECK_EQ(blob->height(), num_channels * 2) << "Blob height: " << blob->height();
@@ -166,7 +166,7 @@ class ImageXYFiller : public Filler<Dtype> {
           for (int k = 0; k < blob->height(); ++k) {
             int offset = c*num_X*num_Y + y*num_X + x;
             Dtype* weight_ptr = data + blob->offset(0,0,k, offset);
-            if (xy == "both") {
+            if (xy == "both" || xy == "both2") {
               if (c*2 == k) {
                 weight_ptr[0] = 2*(Dtype(x+1) / Dtype(num_X) - Dtype(0.5));
               } else if (c*2+1 == k) {
@@ -188,6 +188,7 @@ class ImageXYFiller : public Filler<Dtype> {
       }
     }
 
+    if (xy == "both2") caffe_sqr(blob->num(), data, data);
 
     // We expect the filler to not be called very frequently, so we will
     // just use a simple implementation
