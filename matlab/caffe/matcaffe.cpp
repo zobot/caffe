@@ -155,6 +155,56 @@ static void vgps_train(const mxArray* const bottom) {
   solver_->Solve();
 }
 
+// Input is a cell array of 4 4-D arrays containing image and joint info
+static void vgps_trainb(const mxArray* const bottom) {
+  vector<shared_ptr<Blob<float> > > input_blobs;
+  input_blobs.resize(2);
+
+  const mxArray* const rgb = mxGetCell(bottom, 0);
+  const float* const rgb_ptr = reinterpret_cast<const float* const>(mxGetPr(rgb));
+  const mxArray* const joint = mxGetCell(bottom, 1);
+  const float* const joint_ptr = reinterpret_cast<const float* const>(mxGetPr(joint));
+  const mxArray* const action = mxGetCell(bottom, 2);
+  const float* const action_ptr = reinterpret_cast<const float* const>(mxGetPr(action));
+  const mxArray* const prec = mxGetCell(bottom, 3);
+  const float* const prec_ptr = reinterpret_cast<const float* const>(mxGetPr(prec));
+  CHECK(mxIsSingle(rgb))
+      << "MatCaffe require single-precision float point data";
+  CHECK(mxIsSingle(joint))
+      << "MatCaffe require single-precision float point data";
+
+  const int num_samples = mxGetDimensions(rgb)[3];
+  const int channels = mxGetDimensions(rgb)[2];
+  const int dX = mxGetDimensions(joint)[0];
+  const int dU = mxGetDimensions(action)[0];
+  //CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
+  CHECK_EQ(dU, 7) << "Action dimension incorrect: " << dU;
+
+  input_blobs[0] = shared_ptr<Blob<float> >(new Blob<float>());
+  input_blobs[1] = shared_ptr<Blob<float> >(new Blob<float>());
+  input_blobs[2] = shared_ptr<Blob<float> >(new Blob<float>());
+  input_blobs[3] = shared_ptr<Blob<float> >(new Blob<float>());
+
+  input_blobs[0]->Reshape(num_samples, channels, 1, 1);
+  input_blobs[1]->Reshape(num_samples, dX, 1, 1);
+  input_blobs[2]->Reshape(num_samples, dU, 1, 1);
+  input_blobs[3]->Reshape(num_samples, dU, dU, 1);
+
+  caffe_copy(input_blobs[0]->count(), rgb_ptr, input_blobs[0]->mutable_cpu_data());
+  caffe_copy(input_blobs[1]->count(), joint_ptr, input_blobs[1]->mutable_cpu_data());
+  caffe_copy(input_blobs[2]->count(), action_ptr, input_blobs[2]->mutable_cpu_data());
+  caffe_copy(input_blobs[3]->count(), prec_ptr, input_blobs[3]->mutable_cpu_data());
+
+  shared_ptr<MemoryDataLayer<float> > md_layer =
+    boost::dynamic_pointer_cast<MemoryDataLayer<float> >(solver_->net()->layers()[0]);
+  md_layer->Reset(input_blobs[0]->mutable_cpu_data(),
+                  input_blobs[1]->mutable_cpu_data(),
+                  input_blobs[2]->mutable_cpu_data(),
+                  input_blobs[3]->mutable_cpu_data(), num_samples);
+
+  LOG(INFO) << "Starting Solve";
+  solver_->Solve();
+}
 
 // Input is a cell array of 4 4-D arrays containing image and joint info
 static mxArray* vgps_forward(const mxArray* const bottom) {
@@ -494,6 +544,22 @@ static void set_mode_gpu(MEX_ARGS) {
   Caffe::set_mode(Caffe::GPU);
 }
 
+static void set_phase_forwarda(MEX_ARGS) {
+  Caffe::set_phase(Caffe::FORWARDA);
+}
+
+static void set_phase_forwardb(MEX_ARGS) {
+  Caffe::set_phase(Caffe::FORWARDB);
+}
+
+static void set_phase_traina(MEX_ARGS) {
+  Caffe::set_phase(Caffe::TRAINA);
+}
+
+static void set_phase_trainb(MEX_ARGS) {
+  Caffe::set_phase(Caffe::TRAINB);
+}
+
 static void set_phase_train(MEX_ARGS) {
   Caffe::set_phase(Caffe::TRAIN);
 }
@@ -615,6 +681,16 @@ static void vgps_train(MEX_ARGS) {
   vgps_train(prhs[0]);
 }
 
+static void vgps_trainb(MEX_ARGS) {
+  if (nrhs != 1) {
+    LOG(ERROR) << "Only given " << nrhs << " arguments";
+    mexErrMsgTxt("Wrong number of arguments");
+  }
+
+  Caffe::set_phase(Caffe::TRAINB);
+  vgps_trainb(prhs[0]);
+}
+
 static void forward(MEX_ARGS) {
   if (nrhs != 1) {
     LOG(ERROR) << "Only given " << nrhs << " arguments";
@@ -632,6 +708,7 @@ static void vgps_forward(MEX_ARGS) {
 
   plhs[0] = vgps_forward(prhs[0]);
 }
+
 
 static void vgps_forward_only(MEX_ARGS) {
   if (nrhs != 1) {
@@ -712,6 +789,10 @@ static handler_registry handlers[] = {
   { "set_mode_cpu",       set_mode_cpu    },
   { "set_mode_gpu",       set_mode_gpu    },
   { "set_phase_train",    set_phase_train },
+  { "set_phase_traina",    set_phase_traina },
+  { "set_phase_trainb",    set_phase_trainb },
+  { "set_phase_forwarda",    set_phase_forwarda },
+  { "set_phase_forwardb",    set_phase_forwardb },
   { "set_phase_test",     set_phase_test  },
   { "set_device",         set_device      },
   { "get_weights",        get_weights     },
@@ -721,6 +802,7 @@ static handler_registry handlers[] = {
   { "reset",              reset           },
   { "read_mean",          read_mean       },
   { "train",              vgps_train      },
+  { "trainb",              vgps_trainb      },
   // The end.
   { "END",                NULL            },
 };
