@@ -163,7 +163,7 @@ layers {
   name: "fc_images"
   type: INNER_PRODUCT
   bottom: "conv3"
-  top: "image_features"
+  top: "expected_xy"
   blobs_lr: 0
   blobs_lr: 0
   weight_decay: 0
@@ -182,10 +182,66 @@ layers {
     }
   }
 }
+
+
+# Compute variance of x/y coordinate
+layers {
+  name: "E[X]^2"
+  type: ELTWISE
+  bottom: "expected_xy"
+  bottom: "expected_xy"
+  top: "expected_xy2"
+  eltwise_param {
+    operation: PROD
+  }
+}
+layers {
+  name: "fc_images_nxy2"
+  type: INNER_PRODUCT
+  bottom: "conv3"
+  top: "nexpected_x2y2"
+  blobs_lr: 0
+  blobs_lr: 0
+  weight_decay: 0
+  weight_decay: 0
+  inner_product_param {
+    num_output: 64
+    weight_filler {
+      type: "imagexy"
+      channels: 32
+      width: 109
+      height: 109
+      xy: "nboth2"
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layers {
+  name: "variance"
+  type: ELTWISE
+  bottom: "expected_xy2"
+  bottom: "nexpected_x2y2"
+  top: "variance_xy"
+  eltwise_param {
+    operation: SUM
+  }
+}
+layers {
+  name: "concat_exp_var"
+  type: CONCAT
+  bottom: "expected_xy"
+  bottom: "variance_xy"
+  top: "image_xy_feats"
+}
+
+
 layers {
   name: "fc1_smaller"
   type: INNER_PRODUCT
-  bottom: "image_features"
+  bottom: "image_xy_feats"
   top: "image_features_smaller"
   blobs_lr: 5
   blobs_lr: 10
