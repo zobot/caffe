@@ -381,9 +381,7 @@ static mxArray* get_weights_string() {
   return mx_out;
 }
 
-static void save_weights_to_file(const mxArray* const file_string) {
-  const mxArray* const file = mxGetCell(file_string, 0);
-  const char* const filename = reinterpret_cast<const char* const>(mxGetPr(file));
+static void save_weights_to_file(const char* const filename) {
 
   NetParameter net_param;
   net_->ToProto(&net_param, false);
@@ -566,7 +564,8 @@ static void save_weights_to_file(MEX_ARGS) {
     mexErrMsgTxt("Wrong number of arguments");
   }
 
-  save_weights_to_file(prhs[0]);
+  const char* const filename = mxArrayToString(prhs[0]);
+  save_weights_to_file(filename);
 }
 
 static void set_mode_cpu(MEX_ARGS) {
