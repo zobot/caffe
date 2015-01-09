@@ -381,6 +381,31 @@ static mxArray* get_weights_string() {
   return mx_out;
 }
 
+static void save_weights_to_file(const mxArray* const file_string) {
+  const mxArray* const file = mxGetCell(file_string, 0);
+  const char* const filename = reinterpret_cast<const char* const>(mxGetPr(file));
+
+  NetParameter net_param;
+  net_->ToProto(&net_param, false);
+  vector<int> to_remove;
+  for (int i = 0; i < net_param.layers_size(); ++i) {
+    const LayerParameter& layer_param = net_param.layers(i);
+    if (layer_param.type() != LayerParameter::INNER_PRODUCT) continue;
+    const FillerParameter& filler_param = layer_param.inner_product_param().weight_filler();
+    if (filler_param.type() == "imagexy") to_remove.push_back(i);
+  }
+  for (int i = 0; i < to_remove.size(); ++i) {
+    int r = to_remove[i];
+    // swap the element to the end and then remove it.
+    for (int j = r+1; j < net_param.layers_size(); ++j) {
+      net_param.mutable_layers()->SwapElements(j-1, j);
+    }
+    net_param.mutable_layers()->RemoveLast();
+  }
+
+  WriteProtoToBinaryFile(net_param, filename);
+}
+
 static void set_weights_from_string(const mxArray* const proto_string) {
   const mxArray* const proto = mxGetCell(proto_string, 0);
   const char* const proto_char = reinterpret_cast<const char* const>(mxGetPr(proto));
@@ -535,6 +560,14 @@ static void set_weights(MEX_ARGS) {
   set_weights_from_string(prhs[0]);
 }
 
+static void save_weights_to_file(MEX_ARGS) {
+  if (nrhs != 1) {
+    LOG(ERROR) << "Only given " << nrhs << " arguments";
+    mexErrMsgTxt("Wrong number of arguments");
+  }
+
+  save_weights_to_file(prhs[0]);
+}
 
 static void set_mode_cpu(MEX_ARGS) {
   Caffe::set_mode(Caffe::CPU);
@@ -798,6 +831,7 @@ static handler_registry handlers[] = {
   { "get_weights",        get_weights     },
   { "get_weights_string", get_weights_string     },
   { "set_weights",        set_weights     },
+  { "save_weights",        save_weights_to_file     },
   { "get_init_key",       get_init_key    },
   { "reset",              reset           },
   { "read_mean",          read_mean       },
