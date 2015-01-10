@@ -24,20 +24,20 @@ layers {
     stage: 'test-on-val'
   }
 }
-layers {
-  name: "data"
-  type: HDF5_DATA
-  top: "position"
-  top: "rgb_frames"
-  hdf5_data_param {
-    source: "examples/vgps/test_pose.txt"
-    batch_size: 5
-  }
-  include: {
-    phase: TEST
-    stage: 'test-on-test'
-  }
-}
+#layers {
+  #name: "data"
+  #type: HDF5_DATA
+  #top: "position"
+  #top: "rgb_frames"
+  #hdf5_data_param {
+    #source: "examples/vgps/test_pose.txt"
+    #batch_size: 5
+  #}
+  #include: {
+    #phase: TEST
+    #stage: 'test-on-test'
+  #}
+#}
 layers {
   name: "data"
   type: HDF5_DATA
