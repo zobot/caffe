@@ -697,6 +697,7 @@ static void init_train(MEX_ARGS) {
   }
 }
 
+// MUST CALL set_phase before calling init_test!!!
 static void init_test(MEX_ARGS) {
   if (nrhs != 2 && nrhs != 1) {
     LOG(ERROR) << "Only given " << nrhs << " arguments";
@@ -708,7 +709,7 @@ static void init_test(MEX_ARGS) {
   if (solver_) {
     solver_.reset();
   }
-  Caffe::set_phase(Caffe::TEST);
+  //Caffe::set_phase(Caffe::TEST);
   net_.reset(new Net<float>(string(param_file)));
   if (nrhs == 2) {
     char* model_file = mxArrayToString(prhs[1]);
