@@ -183,6 +183,8 @@ enum Phase {
    TEST = 1;
    FORWARDA = 2;
    FORWARDB = 3;
+   TRAINA = 4;
+   TRAINB = 5;
 }
 
 message NetState {

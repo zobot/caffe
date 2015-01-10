@@ -118,14 +118,14 @@ static void vgps_train(const mxArray* const bottom) {
   CHECK(mxIsSingle(joint))
       << "MatCaffe require single-precision float point data";
 
-  const int num_samples = mxGetDimensions(rgb)[3];
-  const int channels = mxGetDimensions(rgb)[2];
-  const int height = mxGetDimensions(rgb)[0];
-  const int width = mxGetDimensions(rgb)[0];
+  const int num_samples = mxGetDimensions(action)[1];
+  const int channels = std::max(1,mxGetDimensions(rgb)[2]);
+  const int height = std::max(1,mxGetDimensions(rgb)[1]);
+  const int width = std::max(1,mxGetDimensions(rgb)[0]);
   const int dX = mxGetDimensions(joint)[0];
   const int dU = mxGetDimensions(action)[0];
-  CHECK_EQ(channels, 3) << "Channel dimension incorrect";
-  CHECK_EQ(height, 240) << "Image height dimension incorrect";
+  //CHECK_EQ(channels, 3) << "Channel dimension incorrect";
+  //CHECK_EQ(height, 240) << "Image height dimension incorrect";
   //CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
   CHECK_EQ(dU, 7) << "Action dimension incorrect: " << dU;
 
@@ -134,6 +134,7 @@ static void vgps_train(const mxArray* const bottom) {
   input_blobs[2] = shared_ptr<Blob<float> >(new Blob<float>());
   input_blobs[3] = shared_ptr<Blob<float> >(new Blob<float>());
 
+  LOG(INFO) << "Image has size: " << width << " x " << height << " x " << channels;
   input_blobs[0]->Reshape(num_samples, channels, height, width);
   input_blobs[1]->Reshape(num_samples, dX, 1, 1);
   input_blobs[2]->Reshape(num_samples, dU, 1, 1);
@@ -155,6 +156,56 @@ static void vgps_train(const mxArray* const bottom) {
   solver_->Solve();
 }
 
+// Input is a cell array of 4 4-D arrays containing image and joint info
+static void vgps_trainb(const mxArray* const bottom) {
+  vector<shared_ptr<Blob<float> > > input_blobs;
+  input_blobs.resize(2);
+
+  const mxArray* const rgb = mxGetCell(bottom, 0);
+  const float* const rgb_ptr = reinterpret_cast<const float* const>(mxGetPr(rgb));
+  const mxArray* const joint = mxGetCell(bottom, 1);
+  const float* const joint_ptr = reinterpret_cast<const float* const>(mxGetPr(joint));
+  const mxArray* const action = mxGetCell(bottom, 2);
+  const float* const action_ptr = reinterpret_cast<const float* const>(mxGetPr(action));
+  const mxArray* const prec = mxGetCell(bottom, 3);
+  const float* const prec_ptr = reinterpret_cast<const float* const>(mxGetPr(prec));
+  CHECK(mxIsSingle(rgb))
+      << "MatCaffe require single-precision float point data";
+  CHECK(mxIsSingle(joint))
+      << "MatCaffe require single-precision float point data";
+
+  const int num_samples = mxGetDimensions(rgb)[3];
+  const int channels = mxGetDimensions(rgb)[2];
+  const int dX = mxGetDimensions(joint)[0];
+  const int dU = mxGetDimensions(action)[0];
+  //CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
+  CHECK_EQ(dU, 7) << "Action dimension incorrect: " << dU;
+
+  input_blobs[0] = shared_ptr<Blob<float> >(new Blob<float>());
+  input_blobs[1] = shared_ptr<Blob<float> >(new Blob<float>());
+  input_blobs[2] = shared_ptr<Blob<float> >(new Blob<float>());
+  input_blobs[3] = shared_ptr<Blob<float> >(new Blob<float>());
+
+  input_blobs[0]->Reshape(num_samples, channels, 1, 1);
+  input_blobs[1]->Reshape(num_samples, dX, 1, 1);
+  input_blobs[2]->Reshape(num_samples, dU, 1, 1);
+  input_blobs[3]->Reshape(num_samples, dU, dU, 1);
+
+  caffe_copy(input_blobs[0]->count(), rgb_ptr, input_blobs[0]->mutable_cpu_data());
+  caffe_copy(input_blobs[1]->count(), joint_ptr, input_blobs[1]->mutable_cpu_data());
+  caffe_copy(input_blobs[2]->count(), action_ptr, input_blobs[2]->mutable_cpu_data());
+  caffe_copy(input_blobs[3]->count(), prec_ptr, input_blobs[3]->mutable_cpu_data());
+
+  shared_ptr<MemoryDataLayer<float> > md_layer =
+    boost::dynamic_pointer_cast<MemoryDataLayer<float> >(solver_->net()->layers()[0]);
+  md_layer->Reset(input_blobs[0]->mutable_cpu_data(),
+                  input_blobs[1]->mutable_cpu_data(),
+                  input_blobs[2]->mutable_cpu_data(),
+                  input_blobs[3]->mutable_cpu_data(), num_samples);
+
+  LOG(INFO) << "Starting Solve";
+  solver_->Solve();
+}
 
 // Input is a cell array of 4 4-D arrays containing image and joint info
 static mxArray* vgps_forward(const mxArray* const bottom) {
@@ -235,6 +286,60 @@ static mxArray* vgps_forward(const mxArray* const bottom) {
   return mx_out;
 }
 
+// Input is a cell array of 2 4-D arrays containing image and joint info
+static mxArray* vgps_forwarda_only(const mxArray* const bottom) {
+  vector<shared_ptr<Blob<float> > > input_blobs;
+  input_blobs.resize(1);
+
+  const mxArray* const rgb = mxGetCell(bottom, 0);
+  const float* const rgb_ptr = reinterpret_cast<const float* const>(mxGetPr(rgb));
+  CHECK(mxIsSingle(rgb))
+      << "MatCaffe require single-precision float point data";
+
+  const int num_samples = 1;
+  const int channels = mxGetDimensions(rgb)[2];
+  const int height = mxGetDimensions(rgb)[0];
+  const int width = mxGetDimensions(rgb)[0];
+  CHECK_EQ(channels, 3);
+  CHECK_EQ(height, 240);
+
+  input_blobs[0] = shared_ptr<Blob<float> >(new Blob<float>());
+
+  input_blobs[0]->Reshape(num_samples, channels, height, width);
+
+  caffe_copy(input_blobs[0]->count(), rgb_ptr, input_blobs[0]->mutable_cpu_data());
+
+  shared_ptr<MemoryDataLayer<float> > md_layer =
+    boost::dynamic_pointer_cast<MemoryDataLayer<float> >(net_->layers()[0]);
+  md_layer->Reset(input_blobs[0]->mutable_cpu_data(),
+                  num_samples);
+
+  float initial_loss;
+  LOG(INFO) << "Running forward pass";
+  const vector<Blob<float>*>& output_blobs = net_->ForwardPrefilled(&initial_loss);
+
+  // output of fc is the only output blob.
+  mxArray* mx_out = mxCreateCellMatrix(1, 1);
+  mwSize dims[4] = {output_blobs[0]->width(), output_blobs[0]->height(),
+    output_blobs[0]->channels(), output_blobs[0]->num()};
+  mxArray* mx_blob =  mxCreateNumericArray(4, dims, mxSINGLE_CLASS, mxREAL);
+  mxSetCell(mx_out, 0, mx_blob);
+  float* data_ptr = reinterpret_cast<float*>(mxGetPr(mx_blob));
+  switch (Caffe::mode()) {
+  case Caffe::CPU:
+    caffe_copy(output_blobs[0]->count(), output_blobs[0]->cpu_data(),
+        data_ptr);
+    break;
+  case Caffe::GPU:
+    caffe_copy(output_blobs[0]->count(), output_blobs[0]->gpu_data(),
+        data_ptr);
+    break;
+  default:
+    LOG(FATAL) << "Unknown Caffe mode.";
+  }  // switch (Caffe::mode())
+
+  return mx_out;
+}
 // Input is a cell array of 2 4-D arrays containing image and joint info
 static mxArray* vgps_forward_only(const mxArray* const bottom) {
   vector<shared_ptr<Blob<float> > > input_blobs;
@@ -329,6 +434,29 @@ static mxArray* get_weights_string() {
   char* data_ptr = reinterpret_cast<char*>(mxGetPr(mx_proto_string));
   strcpy(data_ptr, proto_string.c_str());
   return mx_out;
+}
+
+static void save_weights_to_file(const char* const filename) {
+
+  NetParameter net_param;
+  net_->ToProto(&net_param, false);
+  vector<int> to_remove;
+  for (int i = 0; i < net_param.layers_size(); ++i) {
+    const LayerParameter& layer_param = net_param.layers(i);
+    if (layer_param.type() != LayerParameter::INNER_PRODUCT) continue;
+    const FillerParameter& filler_param = layer_param.inner_product_param().weight_filler();
+    if (filler_param.type() == "imagexy") to_remove.push_back(i);
+  }
+  for (int i = 0; i < to_remove.size(); ++i) {
+    int r = to_remove[i];
+    // swap the element to the end and then remove it.
+    for (int j = r+1; j < net_param.layers_size(); ++j) {
+      net_param.mutable_layers()->SwapElements(j-1, j);
+    }
+    net_param.mutable_layers()->RemoveLast();
+  }
+
+  WriteProtoToBinaryFile(net_param, filename);
 }
 
 static void set_weights_from_string(const mxArray* const proto_string) {
@@ -485,6 +613,15 @@ static void set_weights(MEX_ARGS) {
   set_weights_from_string(prhs[0]);
 }
 
+static void save_weights_to_file(MEX_ARGS) {
+  if (nrhs != 1) {
+    LOG(ERROR) << "Only given " << nrhs << " arguments";
+    mexErrMsgTxt("Wrong number of arguments");
+  }
+
+  const char* const filename = mxArrayToString(prhs[0]);
+  save_weights_to_file(filename);
+}
 
 static void set_mode_cpu(MEX_ARGS) {
   Caffe::set_mode(Caffe::CPU);
@@ -492,6 +629,22 @@ static void set_mode_cpu(MEX_ARGS) {
 
 static void set_mode_gpu(MEX_ARGS) {
   Caffe::set_mode(Caffe::GPU);
+}
+
+static void set_phase_forwarda(MEX_ARGS) {
+  Caffe::set_phase(Caffe::FORWARDA);
+}
+
+static void set_phase_forwardb(MEX_ARGS) {
+  Caffe::set_phase(Caffe::FORWARDB);
+}
+
+static void set_phase_traina(MEX_ARGS) {
+  Caffe::set_phase(Caffe::TRAINA);
+}
+
+static void set_phase_trainb(MEX_ARGS) {
+  Caffe::set_phase(Caffe::TRAINB);
 }
 
 static void set_phase_train(MEX_ARGS) {
@@ -545,6 +698,7 @@ static void init_train(MEX_ARGS) {
   }
 }
 
+// MUST CALL set_phase before calling init_test!!!
 static void init_test(MEX_ARGS) {
   if (nrhs != 2 && nrhs != 1) {
     LOG(ERROR) << "Only given " << nrhs << " arguments";
@@ -556,7 +710,7 @@ static void init_test(MEX_ARGS) {
   if (solver_) {
     solver_.reset();
   }
-  Caffe::set_phase(Caffe::TEST);
+  //Caffe::set_phase(Caffe::TEST);
   net_.reset(new Net<float>(string(param_file)));
   if (nrhs == 2) {
     char* model_file = mxArrayToString(prhs[1]);
@@ -615,6 +769,16 @@ static void vgps_train(MEX_ARGS) {
   vgps_train(prhs[0]);
 }
 
+static void vgps_trainb(MEX_ARGS) {
+  if (nrhs != 1) {
+    LOG(ERROR) << "Only given " << nrhs << " arguments";
+    mexErrMsgTxt("Wrong number of arguments");
+  }
+
+  Caffe::set_phase(Caffe::TRAINB);
+  vgps_trainb(prhs[0]);
+}
+
 static void forward(MEX_ARGS) {
   if (nrhs != 1) {
     LOG(ERROR) << "Only given " << nrhs << " arguments";
@@ -633,6 +797,7 @@ static void vgps_forward(MEX_ARGS) {
   plhs[0] = vgps_forward(prhs[0]);
 }
 
+
 static void vgps_forward_only(MEX_ARGS) {
   if (nrhs != 1) {
     LOG(ERROR) << "Only given " << nrhs << " arguments";
@@ -640,6 +805,15 @@ static void vgps_forward_only(MEX_ARGS) {
   }
 
   plhs[0] = vgps_forward_only(prhs[0]);
+}
+
+static void vgps_forwarda_only(MEX_ARGS) {
+  if (nrhs != 1) {
+    LOG(ERROR) << "Only given " << nrhs << " arguments";
+    mexErrMsgTxt("Wrong number of arguments");
+  }
+
+  plhs[0] = vgps_forwarda_only(prhs[0]);
 }
 
 static void backward(MEX_ARGS) {
@@ -704,6 +878,7 @@ static handler_registry handlers[] = {
   // Public API functions
   { "forward",            vgps_forward    },
   { "forward_only",       vgps_forward_only    },
+  { "forwarda_only",       vgps_forwarda_only    },
   { "backward",           backward        },
   { "init",               init            },
   { "init_test",          init_test       },
@@ -712,15 +887,21 @@ static handler_registry handlers[] = {
   { "set_mode_cpu",       set_mode_cpu    },
   { "set_mode_gpu",       set_mode_gpu    },
   { "set_phase_train",    set_phase_train },
+  { "set_phase_traina",    set_phase_traina },
+  { "set_phase_trainb",    set_phase_trainb },
+  { "set_phase_forwarda",    set_phase_forwarda },
+  { "set_phase_forwardb",    set_phase_forwardb },
   { "set_phase_test",     set_phase_test  },
   { "set_device",         set_device      },
   { "get_weights",        get_weights     },
   { "get_weights_string", get_weights_string     },
   { "set_weights",        set_weights     },
+  { "save_weights",        save_weights_to_file     },
   { "get_init_key",       get_init_key    },
   { "reset",              reset           },
   { "read_mean",          read_mean       },
   { "train",              vgps_train      },
+  { "trainb",              vgps_trainb      },
   // The end.
   { "END",                NULL            },
 };

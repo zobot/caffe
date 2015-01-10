@@ -1,27 +1,44 @@
 name: "JointAndImageStateRegressionNet"
 layers {
-  name: "data"
+  name: "data1"
   type: HDF5_DATA
-  top: "position"
-  top: "rgb_frames"
+  top: "position1"
+  top: "rgb_frames1"
   hdf5_data_param {
-    source: "examples/vgps/train_pose.txt"
+    source: "examples/vgps/train_pose_wave.txt"
     batch_size: 25
   }
   include: { phase: TRAIN }
 }
+# TODO - change batch size on trial data to be what you want
 layers {
-  name: "data"
+  name: "data2"
   type: HDF5_DATA
-  top: "position"
-  top: "rgb_frames"
+  top: "position2"
+  top: "rgb_frames2"
   hdf5_data_param {
-    source: "examples/vgps/val_pose.txt"
-    batch_size: 5
+    source: "examples/vgps/train_pose_trial.txt"
+    batch_size: 25
   }
-  include: {
-    phase: TEST
-    stage: 'test-on-val'
+  include: { phase: TRAIN }
+}
+
+layers {
+  name: "concat_pose"
+  bottom: "position1"
+  bottom: "position2"
+  top: "position"
+  concat_param {
+    concat_dim: 0
+  }
+}
+layers {
+  name: "concat_rgb"
+  bottom: "rgb_frames1"
+  bottom: "rgb_frames2"
+  top: "rgb_frames"
+  concat_param {
+    concat_dim: 0
   }
 }
 #layers {
@@ -163,7 +180,7 @@ layers {
   name: "fc_images"
   type: INNER_PRODUCT
   bottom: "conv3"
-  top: "expected_xy"
+  top: "image_features"
   blobs_lr: 0
   blobs_lr: 0
   weight_decay: 0
@@ -182,66 +199,10 @@ layers {
     }
   }
 }
-
-
-# Compute variance of x/y coordinate
-layers {
-  name: "E[X]^2"
-  type: ELTWISE
-  bottom: "expected_xy"
-  bottom: "expected_xy"
-  top: "expected_xy2"
-  eltwise_param {
-    operation: PROD
-  }
-}
-layers {
-  name: "fc_images_nxy2"
-  type: INNER_PRODUCT
-  bottom: "conv3"
-  top: "nexpected_x2y2"
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
-  inner_product_param {
-    num_output: 64
-    weight_filler {
-      type: "imagexy"
-      channels: 32
-      width: 109
-      height: 109
-      xy: "nboth2"
-    }
-    bias_filler {
-      type: "constant"
-      value: 0
-    }
-  }
-}
-layers {
-  name: "variance"
-  type: ELTWISE
-  bottom: "expected_xy2"
-  bottom: "nexpected_x2y2"
-  top: "variance_xy"
-  eltwise_param {
-    operation: SUM
-  }
-}
-layers {
-  name: "concat_exp_var"
-  type: CONCAT
-  bottom: "expected_xy"
-  bottom: "variance_xy"
-  top: "image_xy_feats"
-}
-
-
 layers {
   name: "fc1_smaller"
   type: INNER_PRODUCT
-  bottom: "image_xy_feats"
+  bottom: "image_features"
   top: "image_features_smaller"
   blobs_lr: 5
   blobs_lr: 10

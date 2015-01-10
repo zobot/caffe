@@ -6,7 +6,7 @@ layers {
   top: "rgb_frames"
   hdf5_data_param {
     source: "examples/vgps/train_pose.txt"
-    batch_size: 25
+    batch_size: 50
   }
   include: { phase: TRAIN }
 }
@@ -40,17 +40,17 @@ layers {
 }
 # Image Processing Layers
 layers {
-  name: "conv1"
+  name: "conv1/7x7_s2"
   type: CONVOLUTION
   bottom: "rgb_frames"
   top: "conv1"
-  blobs_lr: 10
-  blobs_lr: 20
+  blobs_lr: 1
+  blobs_lr: 2
   weight_decay: 0
   weight_decay: 0
   convolution_param {
-    num_output: 32
-    kernel_size: 11
+    num_output: 64
+    kernel_size: 7
     stride: 2
     weight_filler {
       type: "gaussian"
@@ -144,7 +144,7 @@ layers {
   name: "conf"
   type: INNER_PRODUCT
   bottom: "softmax_all"
-  top: "conf"
+  top: "alpha_orig"
   blobs_lr: 0
   blobs_lr: 0
   weight_decay: 0
@@ -154,8 +154,8 @@ layers {
     weight_filler {
       type: "imagexy"
       channels: 32
-      width: 107
-      height: 107
+      width: 109
+      height: 109
       xy: "ones"
     }
     bias_filler {
@@ -164,6 +164,46 @@ layers {
     }
   }
 }
+layers {
+  name: "fc_alpha"
+  type: INNER_PRODUCT
+  bottom: "alpha_orig"
+  top: "fc_alpha"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 32
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layers {
+  name: "fc_alpha_relu"
+  type: RELU
+  bottom: "fc_alpha"
+  top: "fc_alpha"
+}
+layers {
+  name: "softmax_alpha2"
+  type: SOFTMAX
+  bottom: "fc_alpha"
+  top: "conf"
+  softmax_param {
+    engine: CAFFE
+    temperature: 1.0
+    dimension: "all"
+  }
+}
+
+
 
 layers {
   name: "softmax"
@@ -172,7 +212,7 @@ layers {
   top: "image_out"
   softmax_param {
     engine: CAFFE
-    temperature: 0.1
+    temperature: 1.0
     dimension: "spatial"
   }
 }
@@ -190,8 +230,8 @@ layers {
     weight_filler {
       type: "imagexy"
       channels: 32
-      width: 107
-      height: 107
+      width: 109
+      height: 109
       xy: "x"
     }
     bias_filler {
@@ -214,8 +254,8 @@ layers {
     weight_filler {
       type: "imagexy"
       channels: 32
-      width: 107
-      height: 107
+      width: 109
+      height: 109
       xy: "y"
     }
     bias_filler {
@@ -265,7 +305,7 @@ layers {
   weight_decay: 1
   weight_decay: 0
   inner_product_param {
-    num_output: 3
+    num_output: 9
     weight_filler {
       type: "gaussian"
       std: 0.01
@@ -277,7 +317,14 @@ layers {
   }
 }
 
-
+layers {
+  name: "distance"
+  type: EUCLIDEAN_LOSS
+  bottom: "image_features_smaller"
+  bottom: "position"
+  top: "average_distance"
+  include: { phase: TEST }
+}
 layers {
   name: "loss"
   type: EUCLIDEAN_LOSS
