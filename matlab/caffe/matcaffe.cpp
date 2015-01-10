@@ -119,14 +119,22 @@ static void vgps_train(const mxArray* const bottom) {
   CHECK(mxIsSingle(joint))
       << "MatCaffe require single-precision float point data";
 
-  const int num_samples = mxGetDimensions(rgb)[3];
-  const int channels = mxGetDimensions(rgb)[2];
-  const int height = mxGetDimensions(rgb)[0];
-  const int width = mxGetDimensions(rgb)[0];
+  const int num_samples = mxGetDimensions(action)[1];
+  int channels = 1;
+  int height = 1;
+  int width = 1;
+  if (mxGetNumberOfDimensions(rgb) == 4) {
+    channels = mxGetDimensions(rgb)[2];
+    height = mxGetDimensions(rgb)[1];
+    width = mxGetDimensions(rgb)[0];
+  }
+  else {
+    channels = mxGetDimensions(rgb)[0];
+  }
   const int dX = mxGetDimensions(joint)[0];
   const int dU = mxGetDimensions(action)[0];
-  CHECK_EQ(channels, 3) << "Channel dimension incorrect";
-  CHECK_EQ(height, 240) << "Image height dimension incorrect";
+  //CHECK_EQ(channels, 3) << "Channel dimension incorrect";
+  //CHECK_EQ(height, 240) << "Image height dimension incorrect";
   //CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
   CHECK_EQ(dU, 7) << "Action dimension incorrect: " << dU;
 
@@ -135,6 +143,7 @@ static void vgps_train(const mxArray* const bottom) {
   input_blobs[2] = shared_ptr<Blob<float> >(new Blob<float>());
   input_blobs[3] = shared_ptr<Blob<float> >(new Blob<float>());
 
+  LOG(INFO) << "Image has size: " << width << " x " << height << " x " << channels;
   input_blobs[0]->Reshape(num_samples, channels, height, width);
   input_blobs[1]->Reshape(num_samples, dX, 1, 1);
   input_blobs[2]->Reshape(num_samples, dU, 1, 1);
