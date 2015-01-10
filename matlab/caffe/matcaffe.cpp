@@ -286,6 +286,60 @@ static mxArray* vgps_forward(const mxArray* const bottom) {
 }
 
 // Input is a cell array of 2 4-D arrays containing image and joint info
+static mxArray* vgps_forwarda_only(const mxArray* const bottom) {
+  vector<shared_ptr<Blob<float> > > input_blobs;
+  input_blobs.resize(2);
+
+  const mxArray* const rgb = mxGetCell(bottom, 0);
+  const float* const rgb_ptr = reinterpret_cast<const float* const>(mxGetPr(rgb));
+  CHECK(mxIsSingle(rgb))
+      << "MatCaffe require single-precision float point data";
+
+  const int num_samples = mxGetDimensions(rgb)[3];
+  const int channels = mxGetDimensions(rgb)[2];
+  const int height = mxGetDimensions(rgb)[0];
+  const int width = mxGetDimensions(rgb)[0];
+  CHECK_EQ(channels, 3);
+  CHECK_EQ(height, 240);
+
+  input_blobs[0] = shared_ptr<Blob<float> >(new Blob<float>());
+
+  input_blobs[0]->Reshape(num_samples, channels, height, width);
+
+  caffe_copy(input_blobs[0]->count(), rgb_ptr, input_blobs[0]->mutable_cpu_data());
+
+  shared_ptr<MemoryDataLayer<float> > md_layer =
+    boost::dynamic_pointer_cast<MemoryDataLayer<float> >(net_->layers()[0]);
+  md_layer->Reset(input_blobs[0]->mutable_cpu_data(),
+                  num_samples);
+
+  float initial_loss;
+  LOG(INFO) << "Running forward pass";
+  const vector<Blob<float>*>& output_blobs = net_->ForwardPrefilled(&initial_loss);
+
+  // output of fc is the only output blob.
+  mxArray* mx_out = mxCreateCellMatrix(1, 1);
+  mwSize dims[4] = {output_blobs[0]->width(), output_blobs[0]->height(),
+    output_blobs[0]->channels(), output_blobs[0]->num()};
+  mxArray* mx_blob =  mxCreateNumericArray(4, dims, mxSINGLE_CLASS, mxREAL);
+  mxSetCell(mx_out, 0, mx_blob);
+  float* data_ptr = reinterpret_cast<float*>(mxGetPr(mx_blob));
+  switch (Caffe::mode()) {
+  case Caffe::CPU:
+    caffe_copy(output_blobs[0]->count(), output_blobs[0]->cpu_data(),
+        data_ptr);
+    break;
+  case Caffe::GPU:
+    caffe_copy(output_blobs[0]->count(), output_blobs[0]->gpu_data(),
+        data_ptr);
+    break;
+  default:
+    LOG(FATAL) << "Unknown Caffe mode.";
+  }  // switch (Caffe::mode())
+
+  return mx_out;
+}
+// Input is a cell array of 2 4-D arrays containing image and joint info
 static mxArray* vgps_forward_only(const mxArray* const bottom) {
   vector<shared_ptr<Blob<float> > > input_blobs;
   input_blobs.resize(2);
@@ -751,6 +805,15 @@ static void vgps_forward_only(MEX_ARGS) {
   plhs[0] = vgps_forward_only(prhs[0]);
 }
 
+static void vgps_forwarda_only(MEX_ARGS) {
+  if (nrhs != 1) {
+    LOG(ERROR) << "Only given " << nrhs << " arguments";
+    mexErrMsgTxt("Wrong number of arguments");
+  }
+
+  plhs[0] = vgps_forwarda_only(prhs[0]);
+}
+
 static void backward(MEX_ARGS) {
   if (nrhs != 1) {
     LOG(ERROR) << "Only given " << nrhs << " arguments";
@@ -813,6 +876,7 @@ static handler_registry handlers[] = {
   // Public API functions
   { "forward",            vgps_forward    },
   { "forward_only",       vgps_forward_only    },
+  { "forwarda_only",       vgps_forwarda_only    },
   { "backward",           backward        },
   { "init",               init            },
   { "init_test",          init_test       },
