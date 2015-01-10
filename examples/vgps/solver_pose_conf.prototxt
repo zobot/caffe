@@ -14,5 +14,5 @@ max_iter: 8000
 momentum: 0.9
 weight_decay: 0.005
 snapshot: 500
-snapshot_prefix: "examples/vgps/snapshot/pose_conf"
+snapshot_prefix: "examples/vgps/snapshot/pose_conf_pretrain_fancy"
 solver_mode: GPU
