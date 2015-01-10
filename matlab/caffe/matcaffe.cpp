@@ -119,9 +119,17 @@ static void vgps_train(const mxArray* const bottom) {
       << "MatCaffe require single-precision float point data";
 
   const int num_samples = mxGetDimensions(action)[1];
-  const int channels = std::max(1,mxGetDimensions(rgb)[2]);
-  const int height = std::max(1,mxGetDimensions(rgb)[1]);
-  const int width = std::max(1,mxGetDimensions(rgb)[0]);
+  int channels = 1;
+  int height = 1;
+  int width = 1;
+  if (mxGetNumberOfDimensions(rgb) == 4) {
+    channels = mxGetDimensions(rgb)[2];
+    height = mxGetDimensions(rgb)[1];
+    width = mxGetDimensions(rgb)[0];
+  }
+  else {
+    channels = mxGetDimensions(rgb)[0];
+  }
   const int dX = mxGetDimensions(joint)[0];
   const int dU = mxGetDimensions(action)[0];
   //CHECK_EQ(channels, 3) << "Channel dimension incorrect";
