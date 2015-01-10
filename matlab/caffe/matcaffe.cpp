@@ -12,6 +12,7 @@
 
 #include "caffe/caffe.hpp"
 #include "caffe/data_layers.hpp"
+#include "caffe/util/upgrade_proto.hpp"
 
 #define MEX_ARGS int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs
 
@@ -304,7 +305,7 @@ static mxArray* vgps_forwarda_only(const mxArray* const bottom) {
   CHECK(mxIsSingle(rgb))
       << "MatCaffe require single-precision float point data";
 
-  const int num_samples = 1;
+  const int num_samples = mxGetDimensions(rgb)[3];
   const int channels = mxGetDimensions(rgb)[2];
   const int height = mxGetDimensions(rgb)[0];
   const int width = mxGetDimensions(rgb)[0];
@@ -707,6 +708,49 @@ static void init_train(MEX_ARGS) {
 }
 
 // MUST CALL set_phase before calling init_test!!!
+// first arg is prototxt file, second optional arg is batch size, third optional arg is model weights file
+static void init_forward_batch(MEX_ARGS) {
+  if (nrhs != 2 && nrhs != 1 && nrhs != 3) {
+    LOG(ERROR) << "Only given " << nrhs << " arguments";
+    mexErrMsgTxt("Wrong number of arguments");
+  }
+
+  char* param_file = mxArrayToString(prhs[0]);
+  if (solver_) {
+    solver_.reset();
+  }
+  NetParameter net_param;
+  ReadNetParamsFromTextFileOrDie(string(param_file), &net_param);
+
+  // Alter batch size of memory data layer in net_param
+  if (nrhs == 2) {
+    const char* batch_size_string = mxArrayToString(prhs[1]);
+    int batch_size = atoi(batch_size_string);
+
+    for (int i = 0; i < net_param.layers_size(); ++i) {
+      const LayerParameter& layer_param = net_param.layers(i);
+      if (layer_param.type() != LayerParameter::MEMORY_DATA) continue;
+      MemoryDataParameter* mem_param = net_param.mutable_layers(i)->mutable_memory_data_param();
+      mem_param->set_batch_size(batch_size);
+    }
+  }
+  net_.reset(new Net<float>(net_param));
+
+  if (nrhs == 3) {
+    char* model_file = mxArrayToString(prhs[2]);
+    net_->CopyTrainedLayersFrom(string(model_file));
+    mxFree(model_file);
+  }
+
+  mxFree(param_file);
+
+  init_key = random();  // NOLINT(caffe/random_fn)
+
+  if (nlhs == 1) {
+    plhs[0] = mxCreateDoubleScalar(init_key);
+  }
+}
+// MUST CALL set_phase before calling init_test!!!
 static void init_test(MEX_ARGS) {
   if (nrhs != 2 && nrhs != 1) {
     LOG(ERROR) << "Only given " << nrhs << " arguments";
@@ -890,6 +934,7 @@ static handler_registry handlers[] = {
   { "backward",           backward        },
   { "init",               init            },
   { "init_test",          init_test       },
+  { "init_forward_batch", init_forward_batch},
   { "init_train",         init_train      },
   { "is_initialized",     is_initialized  },
   { "set_mode_cpu",       set_mode_cpu    },
