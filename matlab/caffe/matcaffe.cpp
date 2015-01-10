@@ -288,14 +288,14 @@ static mxArray* vgps_forward(const mxArray* const bottom) {
 // Input is a cell array of 2 4-D arrays containing image and joint info
 static mxArray* vgps_forwarda_only(const mxArray* const bottom) {
   vector<shared_ptr<Blob<float> > > input_blobs;
-  input_blobs.resize(2);
+  input_blobs.resize(1);
 
   const mxArray* const rgb = mxGetCell(bottom, 0);
   const float* const rgb_ptr = reinterpret_cast<const float* const>(mxGetPr(rgb));
   CHECK(mxIsSingle(rgb))
       << "MatCaffe require single-precision float point data";
 
-  const int num_samples = mxGetDimensions(rgb)[3];
+  const int num_samples = 1;
   const int channels = mxGetDimensions(rgb)[2];
   const int height = mxGetDimensions(rgb)[0];
   const int width = mxGetDimensions(rgb)[0];
