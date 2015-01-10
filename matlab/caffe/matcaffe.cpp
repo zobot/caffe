@@ -305,7 +305,7 @@ static mxArray* vgps_forwarda_only(const mxArray* const bottom) {
   CHECK(mxIsSingle(rgb))
       << "MatCaffe require single-precision float point data";
 
-  const int num_samples = 1;
+  const int num_samples = mxGetDimensions(rgb)[3];
   const int channels = mxGetDimensions(rgb)[2];
   const int height = mxGetDimensions(rgb)[0];
   const int width = mxGetDimensions(rgb)[0];
