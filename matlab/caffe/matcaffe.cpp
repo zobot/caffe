@@ -428,10 +428,10 @@ static mxArray* get_weights_string() {
   for (int i = to_remove.size()-1; i >= 0; --i) {
     int r = to_remove[i];
     // swap the element to the end and then remove it.
-    for (int j = r+1; j < net_param.layers_size(); ++j) {
-      net_param.mutable_layers()->SwapElements(j-1, j);
-    }
-    net_param.mutable_layers()->RemoveLast();
+    // for (int j = r+1; j < net_param.layers_size(); ++j) {
+      // net_param.mutable_layers()->SwapElements(j-1, j);
+    // }
+    // net_param.mutable_layers()->RemoveLast();
   }
 
   string proto_string;
