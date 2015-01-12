@@ -425,7 +425,7 @@ static mxArray* get_weights_string() {
     const FillerParameter& filler_param = layer_param.inner_product_param().weight_filler();
     if (filler_param.type() == "imagexy") to_remove.push_back(i);
   }
-  for (int i = 0; i < to_remove.size(); ++i) {
+  for (int i = to_remove.size()-1; i >= 0; --i) {
     int r = to_remove[i];
     // swap the element to the end and then remove it.
     for (int j = r+1; j < net_param.layers_size(); ++j) {
