@@ -326,6 +326,7 @@ static mxArray* vgps_forwarda_only(const mxArray* const bottom) {
   float initial_loss;
   LOG(INFO) << "Running forward pass";
   const vector<Blob<float>*>& output_blobs = net_->ForwardPrefilled(&initial_loss);
+  CHECK_EQ(output_blobs.size(), 1);
 
   // output of fc is the only output blob.
   mxArray* mx_out = mxCreateCellMatrix(1, 1);
@@ -390,6 +391,7 @@ static mxArray* vgps_forward_only(const mxArray* const bottom) {
   float initial_loss;
   LOG(INFO) << "Running forward pass";
   const vector<Blob<float>*>& output_blobs = net_->ForwardPrefilled(&initial_loss);
+  CHECK_EQ(output_blobs.size(), 1);
 
   // output of fc is the only output blob.
   mxArray* mx_out = mxCreateCellMatrix(1, 1);
