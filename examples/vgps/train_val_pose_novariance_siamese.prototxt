@@ -1,0 +1,463 @@
+name: "JointAndImageStateRegressionNet"
+layers {
+  name: "data"
+  type: HDF5_DATA
+  top: "position_a"
+  top: "rgb_frames_a"
+  hdf5_data_param {
+    source: "examples/vgps/train_pose_a.txt"
+    batch_size: 25
+  }
+  include: { phase: TRAIN }
+}
+layers {
+  name: "data"
+  type: HDF5_DATA
+  top: "position_a"
+  top: "rgb_frames_a"
+  hdf5_data_param {
+    source: "examples/vgps/val_pose_a.txt"
+    batch_size: 5
+  }
+  include: {
+    phase: TEST
+    stage: 'test-on-val'
+  }
+}
+layers {
+  name: "data"
+  type: HDF5_DATA
+  top: "position_b"
+  top: "rgb_frames_b"
+  hdf5_data_param {
+    source: "examples/vgps/train_pose_b.txt"
+    batch_size: 25
+  }
+  include: { phase: TRAIN }
+}
+layers {
+  name: "data"
+  type: HDF5_DATA
+  top: "position_b"
+  top: "rgb_frames_b"
+  hdf5_data_param {
+    source: "examples/vgps/val_pose_b.txt"
+    batch_size: 5
+  }
+  include: {
+    phase: TEST
+    stage: 'test-on-val'
+  }
+}
+
+layers {
+  name: "data"
+  type: HDF5_DATA
+  top: "position_a"
+  top: "rgb_frames_a"
+  hdf5_data_param {
+    source: "examples/vgps/train_pose_a.txt"
+    batch_size: 5
+  }
+  include: {
+    phase: TEST
+    stage: 'test-on-train'
+  }
+}
+layers {
+  name: "data"
+  type: HDF5_DATA
+  top: "position_b"
+  top: "rgb_frames_b"
+  hdf5_data_param {
+    source: "examples/vgps/train_pose_b.txt"
+    batch_size: 5
+  }
+  include: {
+    phase: TEST
+    stage: 'test-on-train'
+  }
+}
+
+# Image Processing Layers
+layers {
+  name: "conv1/7x7_s2"
+  type: CONVOLUTION
+  bottom: "rgb_frames_a"
+  top: "conv1_a"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 2
+  weight_decay: 0
+  convolution_param {
+    num_output: 64
+    kernel_size: 7
+    stride: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv1_w"
+  param: "conv1_b"
+}
+layers {
+  name: "relu1"
+  type: RELU
+  bottom: "conv1_a"
+  top: "conv1_a"
+}
+
+#layers {
+#  name: "lrn2"
+#  type: LRN
+#  bottom: "conv1"
+#  top: "conv1_lrn"
+#  lrn_param {
+#    norm_region: ACROSS_CHANNELS
+#    alpha: 5e-05
+#    beta: 0.75
+#  }
+#}
+
+
+layers {
+  name: "conv2"
+  type: CONVOLUTION
+  bottom: "conv1_a"
+  top: "conv2_a"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 2
+  weight_decay: 0
+  convolution_param {
+    num_output: 32
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv2_w"
+  param: "conv2_b"
+}
+layers {
+  name: "relu2"
+  type: RELU
+  bottom: "conv2_a"
+  top: "conv2_a"
+}
+layers {
+  name: "conv3_a"
+  type: CONVOLUTION
+  bottom: "conv2_a"
+  top: "conv3_a"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 2
+  weight_decay: 0
+  convolution_param {
+    num_output: 32
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv3_w"
+  param: "conv3_b"
+}
+layers {
+  name: "relu3"
+  type: RELU
+  bottom: "conv3_a"
+  top: "conv3_a"
+}
+layers {
+  name: "softmax"
+  type: SOFTMAX
+  bottom: "conv3_a"
+  top: "conv3_a"
+  softmax_param {
+    engine: CAFFE
+    temperature: 1.0
+    dimension: "spatial"
+  }
+}
+layers {
+  name: "fc_images"
+  type: INNER_PRODUCT
+  bottom: "conv3_a"
+  top: "expected_xy_a"
+  blobs_lr: 0
+  blobs_lr: 0
+  weight_decay: 0
+  weight_decay: 0
+  inner_product_param {
+    num_output: 64
+    weight_filler {
+      type: "imagexy"
+      channels: 32
+      width: 109
+      height: 109
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "fci_w"
+  param: "fci_b"
+}
+
+
+layers {
+  name: "fc1_smaller"
+  type: INNER_PRODUCT
+  bottom: "expected_xy_a"
+  top: "image_features_smaller_a"
+  blobs_lr: 5
+  blobs_lr: 10
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 6
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "fcs_w"
+  param: "fcs_b"
+}
+layers {
+  name: "euc_distance"
+  type: EUCLIDEAN_DISTANCE
+  bottom: "image_features_smaller_a"
+  bottom: "position_a"
+  top: "average_distance_a"
+  include: {phase: TEST}
+}
+
+layers {
+  name: "loss"
+  type: EUCLIDEAN_LOSS
+  bottom: "image_features_smaller_a"
+  bottom: "position_a"
+  top: "euclidean_error_a"
+  loss_weight: 1
+}
+
+
+
+########### DUPLICATED SIAMESE NETWORK ###########
+
+# Image Processing Layers
+layers {
+  name: "conv1/7x7_s2_p"
+  type: CONVOLUTION
+  bottom: "rgb_frames_b"
+  top: "conv1_b"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 2
+  weight_decay: 0
+  convolution_param {
+    num_output: 64
+    kernel_size: 7
+    stride: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv1_w"
+  param: "conv1_b"
+}
+layers {
+  name: "relu1_p"
+  type: RELU
+  bottom: "conv1_b"
+  top: "conv1_b"
+}
+layers {
+  name: "conv2_p"
+  type: CONVOLUTION
+  bottom: "conv1_b"
+  top: "conv2_b"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 2
+  weight_decay: 0
+  convolution_param {
+    num_output: 32
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv2_w"
+  param: "conv2_b"
+}
+layers {
+  name: "relu2_p"
+  type: RELU
+  bottom: "conv2_b"
+  top: "conv2_b"
+}
+layers {
+  name: "conv3_p"
+  type: CONVOLUTION
+  bottom: "conv2_b"
+  top: "conv3_b"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 2
+  weight_decay: 0
+  convolution_param {
+    num_output: 32
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "conv3_w"
+  param: "conv3_b"
+}
+layers {
+  name: "relu3_p"
+  type: RELU
+  bottom: "conv3_b"
+  top: "conv3_b"
+}
+layers {
+  name: "softmax_p"
+  type: SOFTMAX
+  bottom: "conv3_b"
+  top: "conv3_b"
+  softmax_param {
+    engine: CAFFE
+    temperature: 1.0
+    dimension: "spatial"
+  }
+}
+layers {
+  name: "fc_images_p"
+  type: INNER_PRODUCT
+  bottom: "conv3_b"
+  top: "expected_xy_b"
+  blobs_lr: 0
+  blobs_lr: 0
+  weight_decay: 0
+  weight_decay: 0
+  inner_product_param {
+    num_output: 64
+    weight_filler {
+      type: "imagexy"
+      channels: 32
+      width: 109
+      height: 109
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "fci_w"
+  param: "fci_b"
+}
+layers {
+  name: "fc1_smaller_p"
+  type: INNER_PRODUCT
+  bottom: "expected_xy_b"
+  top: "image_features_smaller_b"
+  blobs_lr: 5
+  blobs_lr: 10
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 6
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+  param: "fcs_w"
+  param: "fcs_b"
+}
+layers {
+  name: "euc_distance_p"
+  type: EUCLIDEAN_DISTANCE
+  bottom: "image_features_smaller_b"
+  bottom: "position_b"
+  top: "average_distance_b"
+  include: {phase: TEST}
+}
+layers {
+  name: "loss_p"
+  type: EUCLIDEAN_LOSS
+  bottom: "image_features_smaller_b"
+  bottom: "position_b"
+  top: "euclidean_error_b"
+  loss_weight: 1
+}
+
+
+
+
+
+
+
+
+
+#layers {
+#  name: "output_lrn"
+#  type: HDF5_OUTPUT
+#  hdf5_output_param {
+#    file_name: "examples/vgps/data/lrn_output_exposure.h5"
+#  }
+#  bottom: "lrn_frames"
+#  bottom: "rgb_frames"
+#  include: {
+#    phase: TEST
+#  }
+#}
+
