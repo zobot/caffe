@@ -86,3 +86,6 @@ LOCK
 LOG*
 CURRENT
 MANIFEST-*
+
+# Text files
+*.txt

@@ -133,6 +133,7 @@ static void vgps_train(const mxArray* const bottom) {
   }
   const int dX = mxGetDimensions(joint)[0];
   const int dU = mxGetDimensions(action)[0];
+  // TODO - add check for dimensions from memory data layer dimensions.
   //CHECK_EQ(channels, 3) << "Channel dimension incorrect";
   //CHECK_EQ(height, 240) << "Image height dimension incorrect";
   //CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
