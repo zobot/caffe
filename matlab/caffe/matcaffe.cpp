@@ -133,6 +133,7 @@ static void vgps_train(const mxArray* const bottom) {
   }
   const int dX = mxGetDimensions(joint)[0];
   const int dU = mxGetDimensions(action)[0];
+  // TODO - add check for dimensions from memory data layer dimensions.
   //CHECK_EQ(channels, 3) << "Channel dimension incorrect";
   //CHECK_EQ(height, 240) << "Image height dimension incorrect";
   //CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
@@ -326,6 +327,7 @@ static mxArray* vgps_forwarda_only(const mxArray* const bottom) {
   float initial_loss;
   LOG(INFO) << "Running forward pass";
   const vector<Blob<float>*>& output_blobs = net_->ForwardPrefilled(&initial_loss);
+  CHECK_EQ(output_blobs.size(), 1);
 
   // output of fc is the only output blob.
   mxArray* mx_out = mxCreateCellMatrix(1, 1);
@@ -390,6 +392,7 @@ static mxArray* vgps_forward_only(const mxArray* const bottom) {
   float initial_loss;
   LOG(INFO) << "Running forward pass";
   const vector<Blob<float>*>& output_blobs = net_->ForwardPrefilled(&initial_loss);
+  CHECK_EQ(output_blobs.size(), 1);
 
   // output of fc is the only output blob.
   mxArray* mx_out = mxCreateCellMatrix(1, 1);
