@@ -190,7 +190,7 @@ TYPED_TEST(SoftmaxLayerTest, TestGradientSpatial) {
     LayerParameter layer_param;
     const char* dimension = "spatial";
     layer_param.mutable_softmax_param()->set_dimension(dimension);
-  layer_param.mutable_softmax_param()->set_temperature(0.1);
+    layer_param.mutable_softmax_param()->set_temperature(0.1);
     SoftmaxLayer<Dtype> layer(layer_param);
     GradientChecker<Dtype> checker(1e-2, 1e-2);
     checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
@@ -210,7 +210,7 @@ TYPED_TEST(SoftmaxLayerTest, TestGradientAll) {
     LayerParameter layer_param;
     const char* dimension = "all";
     layer_param.mutable_softmax_param()->set_dimension(dimension);
-  layer_param.mutable_softmax_param()->set_temperature(0.1);
+    layer_param.mutable_softmax_param()->set_temperature(0.1);
     SoftmaxLayer<Dtype> layer(layer_param);
     GradientChecker<Dtype> checker(1e-2, 1e-2);
     checker.CheckGradientExhaustive(&layer, this->blob_bottom_vec_,
