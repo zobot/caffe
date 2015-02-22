@@ -1,0 +1,18 @@
+net: "examples/vgps/train_val_pose_lrn.prototxt"
+solver_type: SGD
+test_state: { stage: 'test-on-val' }
+test_iter: 20 # normally 20
+test_state: { stage: 'test-on-train' }
+test_iter: 180 # normally 180
+test_interval: 500
+base_lr: 0.001
+lr_policy: "step"
+gamma: 0.1
+stepsize: 12000
+display: 100
+max_iter: 20000
+momentum: 0.9
+weight_decay: 0.005
+snapshot: 1000
+snapshot_prefix: "examples/vgps/snapshot/pose_pretrain_lrn_clutter_clean"
+solver_mode: GPU
