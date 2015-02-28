@@ -39,7 +39,7 @@ void EntropyLossLayer<Dtype>::Backward_cpu(
     const vector<Blob<Dtype>*>& top, const vector<bool>& propagate_down,
     const vector<Blob<Dtype>*>& bottom) {
   if (propagate_down[1]) {
-    LOG(FATAL) << this->type_name()
+    LOG(FATAL) << "EntropyLossLayer"
                << " Layer cannot backpropagate to label inputs.";
   }
   if (propagate_down[0]) {
@@ -59,5 +59,5 @@ void EntropyLossLayer<Dtype>::Backward_cpu(
 }
 
 INSTANTIATE_CLASS(EntropyLossLayer);
-REGISTER_LAYER_CLASS(ENTROPY_LOSS, EntropyLossLayer);
+REGISTER_LAYER_CLASS(EntropyLoss);
 }  // namespace caffe

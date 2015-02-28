@@ -17,6 +17,8 @@
 #include "caffe/proto/caffe.pb.h"
 #include "caffe/util/io.hpp"
 
+const int kProtoReadBytesLimit = INT_MAX;  // Max size of 2 GB minus 1 byte.
+
 namespace caffe {
 
 using google::protobuf::io::FileInputStream;
@@ -50,7 +52,7 @@ bool ReadProtoFromBinaryFile(const char* filename, Message* proto) {
   CHECK_NE(fd, -1) << "File not found: " << filename;
   ZeroCopyInputStream* raw_input = new FileInputStream(fd);
   CodedInputStream* coded_input = new CodedInputStream(raw_input);
-  coded_input->SetTotalBytesLimit(1073741824, 536870912);
+  coded_input->SetTotalBytesLimit(kProtoReadBytesLimit, 536870912);
 
   bool success = proto->ParseFromCodedStream(coded_input);
 
@@ -81,6 +83,20 @@ cv::Mat ReadImageToCVMat(const string& filename,
     cv_img = cv_img_origin;
   }
   return cv_img;
+}
+
+cv::Mat ReadImageToCVMat(const string& filename,
+    const int height, const int width) {
+  return ReadImageToCVMat(filename, height, width, true);
+}
+
+cv::Mat ReadImageToCVMat(const string& filename,
+    const bool is_color) {
+  return ReadImageToCVMat(filename, 0, 0, is_color);
+}
+
+cv::Mat ReadImageToCVMat(const string& filename) {
+  return ReadImageToCVMat(filename, 0, 0, true);
 }
 
 bool ReadImageToDatum(const string& filename, const int label,
@@ -133,6 +149,20 @@ cv::Mat DecodeDatumToCVMat(const Datum& datum,
     LOG(ERROR) << "Could not decode datum ";
   }
   return cv_img;
+}
+
+cv::Mat DecodeDatumToCVMat(const Datum& datum,
+    const int height, const int width) {
+  return DecodeDatumToCVMat(datum, height, width, true);
+}
+
+cv::Mat DecodeDatumToCVMat(const Datum& datum,
+    const bool is_color) {
+  return DecodeDatumToCVMat(datum, 0, 0, is_color);
+}
+
+cv::Mat DecodeDatumToCVMat(const Datum& datum) {
+  return DecodeDatumToCVMat(datum, 0, 0, true);
 }
 
 // If Datum is encoded will decoded using DecodeDatumToCVMat and CVMatToDatum
@@ -199,11 +229,11 @@ void hdf5_load_nd_dataset_helper(
   CHECK_GE(status, 0) << "Failed to get dataset info for " << dataset_name_;
   CHECK_EQ(class_, H5T_FLOAT) << "Expected float or double data";
 
-  blob->Reshape(
-    dims[0],
-    (dims.size() > 1) ? dims[1] : 1,
-    (dims.size() > 2) ? dims[2] : 1,
-    (dims.size() > 3) ? dims[3] : 1);
+  vector<int> blob_dims(dims.size());
+  for (int i = 0; i < dims.size(); ++i) {
+    blob_dims[i] = dims[i];
+  }
+  blob->Reshape(blob_dims);
 }
 
 template <>
@@ -226,7 +256,7 @@ void hdf5_load_nd_dataset<double>(hid_t file_id, const char* dataset_name_,
 
 template <>
 void hdf5_save_nd_dataset<float>(
-    const hid_t file_id, const string dataset_name, const Blob<float>& blob) {
+    const hid_t file_id, const string& dataset_name, const Blob<float>& blob) {
   hsize_t dims[HDF5_NUM_DIMS];
   dims[0] = blob.num();
   dims[1] = blob.channels();
@@ -239,7 +269,7 @@ void hdf5_save_nd_dataset<float>(
 
 template <>
 void hdf5_save_nd_dataset<double>(
-    const hid_t file_id, const string dataset_name, const Blob<double>& blob) {
+    const hid_t file_id, const string& dataset_name, const Blob<double>& blob) {
   hsize_t dims[HDF5_NUM_DIMS];
   dims[0] = blob.num();
   dims[1] = blob.channels();

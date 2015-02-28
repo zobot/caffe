@@ -11,11 +11,11 @@
 #include "caffe/blob.hpp"
 #include "caffe/common.hpp"
 #include "caffe/data_transformer.hpp"
-#include "caffe/dataset.hpp"
 #include "caffe/filler.hpp"
 #include "caffe/internal_thread.hpp"
 #include "caffe/layer.hpp"
 #include "caffe/proto/caffe.pb.h"
+#include "caffe/util/db.hpp"
 
 namespace caffe {
 
@@ -90,9 +90,7 @@ class DataLayer : public BasePrefetchingDataLayer<Dtype> {
   virtual void DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
-  virtual inline LayerParameter_LayerType type() const {
-    return LayerParameter_LayerType_DATA;
-  }
+  virtual inline const char* type() const { return "Data"; }
   virtual inline int ExactNumBottomBlobs() const { return 0; }
   virtual inline int MinTopBlobs() const { return 1; }
   virtual inline int MaxTopBlobs() const { return 2; }
@@ -100,8 +98,8 @@ class DataLayer : public BasePrefetchingDataLayer<Dtype> {
  protected:
   virtual void InternalThreadEntry();
 
-  shared_ptr<Dataset<string, Datum> > dataset_;
-  Dataset<string, Datum>::const_iterator iter_;
+  shared_ptr<db::DB> db_;
+  shared_ptr<db::Cursor> cursor_;
 };
 
 /**
@@ -120,9 +118,7 @@ class DummyDataLayer : public Layer<Dtype> {
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {}
 
-  virtual inline LayerParameter_LayerType type() const {
-    return LayerParameter_LayerType_DUMMY_DATA;
-  }
+  virtual inline const char* type() const { return "DummyData"; }
   virtual inline int ExactNumBottomBlobs() const { return 0; }
   virtual inline int MinTopBlobs() const { return 1; }
 
@@ -155,9 +151,7 @@ class HDF5DataLayer : public Layer<Dtype> {
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {}
 
-  virtual inline LayerParameter_LayerType type() const {
-    return LayerParameter_LayerType_HDF5_DATA;
-  }
+  virtual inline const char* type() const { return "HDF5Data"; }
   virtual inline int ExactNumBottomBlobs() const { return 0; }
   virtual inline int MinTopBlobs() const { return 1; }
 
@@ -187,17 +181,16 @@ class HDF5DataLayer : public Layer<Dtype> {
 template <typename Dtype>
 class HDF5OutputLayer : public Layer<Dtype> {
  public:
-  explicit HDF5OutputLayer(const LayerParameter& param);
+  explicit HDF5OutputLayer(const LayerParameter& param)
+      : Layer<Dtype>(param), file_opened_(false) {}
   virtual ~HDF5OutputLayer();
   virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
-      const vector<Blob<Dtype>*>& top) {}
+      const vector<Blob<Dtype>*>& top);
   // Data layers have no bottoms, so reshaping is trivial.
   virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {}
 
-  virtual inline LayerParameter_LayerType type() const {
-    return LayerParameter_LayerType_HDF5_OUTPUT;
-  }
+  virtual inline const char* type() const { return "HDF5Output"; }
   // TODO: no limit on the number of blobs
   virtual inline int ExactNumBottomBlobs() const { return 2; }
   virtual inline int ExactNumTopBlobs() const { return 0; }
@@ -215,6 +208,7 @@ class HDF5OutputLayer : public Layer<Dtype> {
       const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
   virtual void SaveBlobs();
 
+  bool file_opened_;
   std::string file_name_;
   hid_t file_id_;
   Blob<Dtype> data_blob_;
@@ -235,9 +229,7 @@ class ImageDataLayer : public BasePrefetchingDataLayer<Dtype> {
   virtual void DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
-  virtual inline LayerParameter_LayerType type() const {
-    return LayerParameter_LayerType_IMAGE_DATA;
-  }
+  virtual inline const char* type() const { return "ImageData"; }
   virtual inline int ExactNumBottomBlobs() const { return 0; }
   virtual inline int ExactNumTopBlobs() const { return 2; }
 
@@ -263,16 +255,16 @@ class MemoryDataLayer : public BaseDataLayer<Dtype> {
   virtual void DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
-  virtual inline LayerParameter_LayerType type() const {
-    return LayerParameter_LayerType_MEMORY_DATA;
-  }
+  virtual inline const char* type() const { return "MemoryData"; }
   virtual inline int ExactNumBottomBlobs() const { return 0; }
   virtual inline int MinTopBlobs() const { return 1; }
   // virtual inline int MinTopBlobs() const { return 1; }
   // virtual inline int MaxTopBlobs() const { return 4; }
 
 
-  // virtual void AddDatumVector(const vector<Datum>& datum_vector);
+  // virtual void AddDatumVector(const vector<Datum>& datum_vector); //TODO: make sure this comment is necessary
+  // virtual void AddMatVector(const vector<cv::Mat>& mat_vector,  //TODO: make sure this comment is necessary
+      //const vector<int>& labels);
 
   // Reset should accept const pointers, but can't, because the memory
   //  will be given to Blob, which is mutable
@@ -280,6 +272,8 @@ class MemoryDataLayer : public BaseDataLayer<Dtype> {
   void Reset(Dtype* data1, Dtype* data2, Dtype* data3, int n);
   void Reset(Dtype* data1, Dtype* data2, int n);
   void Reset(Dtype* data1, int n);
+  // void set_batch_size(int new_size); //TODO: make sure this comment is necessary
+
 
   int batch_size() { return batch_size_; }
   // int channels() { return channels_; }
@@ -323,9 +317,7 @@ class WindowDataLayer : public BasePrefetchingDataLayer<Dtype> {
   virtual void DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top);
 
-  virtual inline LayerParameter_LayerType type() const {
-    return LayerParameter_LayerType_WINDOW_DATA;
-  }
+  virtual inline const char* type() const { return "WindowData"; }
   virtual inline int ExactNumBottomBlobs() const { return 0; }
   virtual inline int ExactNumTopBlobs() const { return 2; }
 

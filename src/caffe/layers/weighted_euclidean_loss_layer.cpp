@@ -77,5 +77,5 @@ void WeightedEuclideanLossLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>&
 }
 
 INSTANTIATE_CLASS(WeightedEuclideanLossLayer);
-REGISTER_LAYER_CLASS(WEIGHTED_EUCLIDEAN_LOSS, WeightedEuclideanLossLayer);
+REGISTER_LAYER_CLASS(WeightedEuclideanLoss);
 }  // namespace caffe

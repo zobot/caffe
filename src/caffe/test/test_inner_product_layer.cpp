@@ -67,6 +67,7 @@ TYPED_TEST(InnerProductLayerTest, TestSetUp) {
   EXPECT_EQ(this->blob_top_->channels(), 10);
 }
 
+/*
 TYPED_TEST(InnerProductLayerTest, TestImageFillerYForward) {
   typedef typename TypeParam::Dtype Dtype;
   bool IS_VALID_CUDA = false;
@@ -133,6 +134,7 @@ TYPED_TEST(InnerProductLayerTest, TestImageFillerForward) {
     LOG(ERROR) << "Skipping test due to old architecture.";
   }
 }
+*/
 
 TYPED_TEST(InnerProductLayerTest, TestForward) {
   typedef typename TypeParam::Dtype Dtype;

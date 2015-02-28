@@ -38,9 +38,12 @@ static void CheckFile(const string& filename) {
 }
 
 bp::object PyBlobWrap::get_data() {
-  npy_intp dims[] = {num(), channels(), height(), width()};
-
-  PyObject *obj = PyArray_SimpleNewFromData(4, dims, NPY_FLOAT32,
+  const int num_axes = blob_->num_axes();
+  vector<npy_intp> dims(num_axes);
+  for (int i = 0; i < num_axes; ++i) {
+    dims[i] = blob_->shape(i);
+  }
+  PyObject *obj = PyArray_SimpleNewFromData(num_axes, dims.data(), NPY_FLOAT32,
                                             blob_->mutable_cpu_data());
   PyArray_SetBaseObject(reinterpret_cast<PyArrayObject *>(obj), self_);
   Py_INCREF(self_);
@@ -50,9 +53,12 @@ bp::object PyBlobWrap::get_data() {
 }
 
 bp::object PyBlobWrap::get_diff() {
-  npy_intp dims[] = {num(), channels(), height(), width()};
-
-  PyObject *obj = PyArray_SimpleNewFromData(4, dims, NPY_FLOAT32,
+  const int num_axes = blob_->num_axes();
+  vector<npy_intp> dims(num_axes);
+  for (int i = 0; i < num_axes; ++i) {
+    dims[i] = blob_->shape(i);
+  }
+  PyObject *obj = PyArray_SimpleNewFromData(num_axes, dims.data(), NPY_FLOAT32,
                                             blob_->mutable_cpu_diff());
   PyArray_SetBaseObject(reinterpret_cast<PyArrayObject *>(obj), self_);
   Py_INCREF(self_);
@@ -150,6 +156,13 @@ void PySGDSolver::SolveResume(const string& resume_file) {
 }
 
 BOOST_PYTHON_MODULE(_caffe) {
+  // Caffe utility methods
+  bp::def("set_mode_cpu",          &set_mode_cpu);
+  bp::def("set_mode_gpu",          &set_mode_gpu);
+  bp::def("set_phase_train",       &set_phase_train);
+  bp::def("set_phase_test",        &set_phase_test);
+  bp::def("set_device",            &Caffe::SetDevice);
+
   // below, we prepend an underscore to methods that will be replaced
   // in Python
   bp::class_<PyNet, shared_ptr<PyNet> >(
@@ -160,11 +173,6 @@ BOOST_PYTHON_MODULE(_caffe) {
       .def("_forward",              &PyNet::Forward)
       .def("_backward",             &PyNet::Backward)
       .def("reshape",               &PyNet::Reshape)
-      .def("set_mode_cpu",          &PyNet::set_mode_cpu)
-      .def("set_mode_gpu",          &PyNet::set_mode_gpu)
-      .def("set_phase_train",       &PyNet::set_phase_train)
-      .def("set_phase_test",        &PyNet::set_phase_test)
-      .def("set_device",            &PyNet::set_device)
       .add_property("_blobs",       &PyNet::blobs)
       .add_property("layers",       &PyNet::layers)
       .add_property("_blob_names",  &PyNet::blob_names)
@@ -199,7 +207,8 @@ BOOST_PYTHON_MODULE(_caffe) {
       .add_property("test_nets", &PySGDSolver::test_nets)
       .add_property("iter",      &PySGDSolver::iter)
       .def("solve",              &PySGDSolver::Solve)
-      .def("solve",              &PySGDSolver::SolveResume);
+      .def("solve",              &PySGDSolver::SolveResume)
+      .def("step",               &PySGDSolver::Step);
 
   bp::class_<vector<shared_ptr<PyNet> > >("NetVec")
       .def(bp::vector_indexing_suite<vector<shared_ptr<PyNet> >, true>());

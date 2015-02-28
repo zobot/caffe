@@ -58,5 +58,5 @@ void EuclideanDistanceLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bott
 }
 
 INSTANTIATE_CLASS(EuclideanDistanceLayer);
-REGISTER_LAYER_CLASS(EUCLIDEAN_DISTANCE, EuclideanDistanceLayer);
+REGISTER_LAYER_CLASS(EuclideanDistance);
 }  // namespace caffe

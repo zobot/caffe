@@ -36,7 +36,7 @@ void HDF5DataLayer<Dtype>::LoadHDF5FileData(const char* filename) {
   hdf_blobs_.resize(top_size);
 
   const int MIN_DATA_DIM = 1;
-  const int MAX_DATA_DIM = 4;
+  const int MAX_DATA_DIM = INT_MAX;
 
   for (int i = 0; i < top_size; ++i) {
     hdf_blobs_[i] = shared_ptr<Blob<Dtype> >(new Blob<Dtype>());
@@ -58,6 +58,9 @@ void HDF5DataLayer<Dtype>::LoadHDF5FileData(const char* filename) {
 template <typename Dtype>
 void HDF5DataLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
+  // Refuse transformation parameters since HDF5 is totally generic.
+  CHECK(!this->layer_param_.has_transform_param()) <<
+      this->type() << " does not transform data.";
   // Read the source to parse the filenames.
   const string& source = this->layer_param_.hdf5_data_param().source();
   LOG(INFO) << "Loading list of HDF5 filenames from: " << source;
@@ -75,6 +78,8 @@ void HDF5DataLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   num_files_ = hdf_filenames_.size();
   current_file_ = 0;
   LOG(INFO) << "Number of HDF5 files: " << num_files_;
+  CHECK_GE(num_files_, 1) << "Must have at least 1 HDF5 filename listed in "
+    << source;
 
   // Load the first HDF5 file and initialize the line counter.
   LoadHDF5FileData(hdf_filenames_[current_file_].c_str());
@@ -83,9 +88,14 @@ void HDF5DataLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   // Reshape blobs.
   const int batch_size = this->layer_param_.hdf5_data_param().batch_size();
   const int top_size = this->layer_param_.top_size();
+  vector<int> top_shape;
   for (int i = 0; i < top_size; ++i) {
-    top[i]->Reshape(batch_size, hdf_blobs_[i]->channels(),
-                    hdf_blobs_[i]->height(), hdf_blobs_[i]->width());
+    top_shape.resize(hdf_blobs_[i]->num_axes());
+    top_shape[0] = batch_size;
+    for (int j = 1; j < top_shape.size(); ++j) {
+      top_shape[j] = hdf_blobs_[i]->shape(j);
+    }
+    top[i]->Reshape(top_shape);
   }
 }
 
@@ -119,5 +129,6 @@ STUB_GPU_FORWARD(HDF5DataLayer, Forward);
 #endif
 
 INSTANTIATE_CLASS(HDF5DataLayer);
-REGISTER_LAYER_CLASS(HDF5_DATA, HDF5DataLayer);
+REGISTER_LAYER_CLASS(HDF5Data);
+
 }  // namespace caffe

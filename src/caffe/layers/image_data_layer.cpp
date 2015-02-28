@@ -1,3 +1,5 @@
+#include <opencv2/core/core.hpp>
+
 #include <fstream>  // NOLINT(readability/streams)
 #include <iostream>  // NOLINT(readability/streams)
 #include <string>
@@ -79,8 +81,9 @@ void ImageDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
       << top[0]->channels() << "," << top[0]->height() << ","
       << top[0]->width();
   // label
-  top[1]->Reshape(batch_size, 1, 1, 1);
-  this->prefetch_label_.Reshape(batch_size, 1, 1, 1);
+  vector<int> label_shape(1, batch_size);
+  top[1]->Reshape(label_shape);
+  this->prefetch_label_.Reshape(label_shape);
 }
 
 template <typename Dtype>
@@ -116,10 +119,8 @@ void ImageDataLayer<Dtype>::InternalThreadEntry() {
     timer.Start();
     CHECK_GT(lines_size, lines_id_);
     cv::Mat cv_img = ReadImageToCVMat(root_folder + lines_[lines_id_].first,
-                                    new_height, new_width, is_color);
-    if (!cv_img.data) {
-      continue;
-    }
+        new_height, new_width, is_color);
+    CHECK(cv_img.data) << "Could not load " << lines_[lines_id_].first;
     read_time += timer.MicroSeconds();
     timer.Start();
     // Apply transformations (mirror, crop...) to the image
@@ -147,5 +148,6 @@ void ImageDataLayer<Dtype>::InternalThreadEntry() {
 }
 
 INSTANTIATE_CLASS(ImageDataLayer);
-REGISTER_LAYER_CLASS(IMAGE_DATA, ImageDataLayer);
+REGISTER_LAYER_CLASS(ImageData);
+
 }  // namespace caffe
