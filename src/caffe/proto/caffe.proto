@@ -41,6 +41,11 @@ message FillerParameter {
   // The expected number of non-zero output weights for a given input in
   // Gaussian filler -- the default -1 means don't perform sparsification.
   optional int32 sparse = 7 [default = -1];
+  // Added for spatial softmax layer
+  optional int32 channels = 8 [default = -1];
+  optional int32 width = 9 [default = -1];
+  optional int32 height = 10 [default = -1];
+  optional string xy = 11 [default = 'both'];
 }
 
 message NetParameter {
