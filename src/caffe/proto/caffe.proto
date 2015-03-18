@@ -260,7 +260,7 @@ message ParamSpec {
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
 //
-// LayerParameter next available layer-specific ID: 134 (last added: recurrent_param)
+// LayerParameter next available layer-specific ID: 135 (last added: spatial_softmax_param)
 message LayerParameter {
   optional string name = 1; // the layer name
   optional string type = 2; // the layer type
@@ -331,6 +331,7 @@ message LayerParameter {
   optional ReshapeParameter reshape_param = 132;
   optional SigmoidParameter sigmoid_param = 124;
   optional SoftmaxParameter softmax_param = 125;
+  optional SpatialSoftmaxParameter spatial_softmax_param = 134;
   optional SliceParameter slice_param = 126;
   optional TanHParameter tanh_param = 127;
   optional ThresholdParameter threshold_param = 128;
@@ -747,6 +748,18 @@ message SoftmaxParameter {
   // from the end (e.g., -1 for the last axis).
   // Any other axes will be evaluated as independent softmaxes.
   optional int32 axis = 2 [default = 1];
+}
+
+// Message that stores parameters used by SpatialSoftmaxLayer
+message SpatialSoftmaxParameter {
+  enum Engine {
+    DEFAULT = 0;
+    CAFFE = 1;
+    CUDNN = 2;
+  }
+  optional Engine engine = 1 [default = DEFAULT];
+  optional float temperature = 2 [default = 1.0];
+  optional string dimension = 3 [default = "channel"]; // spatial, channel, or all
 }
 
 // Message that stores parameters used by TanHLayer
