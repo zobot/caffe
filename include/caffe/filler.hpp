@@ -172,15 +172,12 @@ class ExpectationFiller : public Filler<Dtype> {
     int height = this->filler_param_.height();
     const string& option = this->filler_param_.expectation_option();
 
-    // int width = blob->shape(-1);
-    // int height = blob->shape(-2);
-
     // paramater blob should be 1x1xhxw where h is determined by number of
     // channels of the input and w is the dim of the input.
     CHECK_EQ(blob->shape(1), width * height) << blob->shape(1) << " != " << width*height;
+    // x means E[x], y means E[y]
     // xy means E[x] and E[y] both output
     // -x^2y^2 means -E[x^2] and -E[y^2] both output
-    // x means E[x]
     if (option == "xy" || option == "-x^2y^2") {
       // Output dimension of inner product layer should be either 2 or 1
       CHECK_EQ(blob->shape(0), 2) << "Output point dimension: " << blob->shape(0);
@@ -195,8 +192,7 @@ class ExpectationFiller : public Filler<Dtype> {
         // Iterature over all outputs.
         for (int k = 0; k < blob->shape(0); ++k) {
           int offset = y*width + x;
-          static const int offset_array[] = {k, offset};
-          Dtype* weight_ptr = data + blob->offset(vector<int>(offset_array, offset_array+2));
+          Dtype* weight_ptr = data + k*width*height + offset;
           if (k == 0) {
             if (option == "y") {
               weight_ptr[0] = 2*(Dtype(y) / Dtype(height-1) - Dtype(0.5));
@@ -246,6 +242,8 @@ Filler<Dtype>* GetFiller(const FillerParameter& param) {
     return new UniformFiller<Dtype>(param);
   } else if (type == "xavier") {
     return new XavierFiller<Dtype>(param);
+  } else if (type == "expectation") {
+    return new ExpectationFiller<Dtype>(param);
   } else {
     CHECK(false) << "Unknown filler name: " << param.type();
   }
