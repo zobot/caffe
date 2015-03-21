@@ -773,7 +773,7 @@ message SpatialSoftmaxParameter {
   }
   optional Engine engine = 1 [default = DEFAULT];
   optional float temperature = 2 [default = 1.0];
-  optional string dimension = 3 [default = "channel"]; // spatial, channel, or all
+  optional string dimension = 3 [default = "spatial"]; // spatial, channel, or all
 }
 
 // Message that stores parameters used by TanHLayer

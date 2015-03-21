@@ -1,7 +1,7 @@
 name: "JointAndImageStateRegressionNet"
-layers {
+layer {
   name: "data"
-  type: HDF5_DATA
+  type: "HDF5Data"
   top: "position"
   top: "rgb_frames"
   hdf5_data_param {
@@ -10,9 +10,9 @@ layers {
   }
   include: { phase: TRAIN }
 }
-layers {
+layer {
   name: "data"
-  type: HDF5_DATA
+  type: "HDF5Data"
   top: "position"
   top: "rgb_frames"
   hdf5_data_param {
@@ -24,9 +24,9 @@ layers {
     stage: 'test-on-val'
   }
 }
-layers {
+layer {
   name: "data"
-  type: HDF5_DATA
+  type: "HDF5Data"
   top: "position"
   top: "rgb_frames"
   hdf5_data_param {
@@ -39,9 +39,9 @@ layers {
   }
 }
 
-layers {
+layer {
   name: "lrn"
-  type: LRN
+  type: "LRN"
   bottom: "rgb_frames"
   top: "lrn_frames"
   lrn_param {
@@ -52,15 +52,19 @@ layers {
 }
 
 # Image Processing Layers
-layers {
+layer {
   name: "conv1/7x7_s2"
-  type: CONVOLUTION
+  type: "Convolution"
   bottom: "lrn_frames"
   top: "conv1"
-  blobs_lr: 1
-  blobs_lr: 2
-  weight_decay: 2
-  weight_decay: 0
+  param {
+    lr_mult: 1
+    decay_mult: 2
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 64
     kernel_size: 7
@@ -75,38 +79,30 @@ layers {
     }
   }
 }
-layers {
+layer {
   name: "relu1"
-  type: RELU
+  type: "ReLU"
   bottom: "conv1"
   top: "conv1"
 }
 
-#layers {
-#  name: "lrn2"
-#  type: LRN
-#  bottom: "conv1"
-#  top: "conv1_lrn"
-#  lrn_param {
-#    norm_region: ACROSS_CHANNELS
-#    alpha: 5e-05
-#    beta: 0.75
-#  }
-#}
 
-
-layers {
+layer {
   name: "conv2"
-  type: CONVOLUTION
+  type: "Convolution"
   bottom: "conv1"
   top: "conv2"
-  blobs_lr: 1
-  blobs_lr: 2
-  weight_decay: 2
-  weight_decay: 0
+  param {
+    lr_mult: 1
+    decay_mult: 2
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 32
-    kernel_size: 9
+    kernel_size: 5
     stride: 1
     weight_filler {
       type: "gaussian"
@@ -118,21 +114,25 @@ layers {
     }
   }
 }
-layers {
+layer {
   name: "relu2"
-  type: RELU
+  type: "ReLU"
   bottom: "conv2"
   top: "conv2"
 }
-layers {
+layer {
   name: "conv3"
-  type: CONVOLUTION
+  type: "Convolution"
   bottom: "conv2"
   top: "conv3"
-  blobs_lr: 1
-  blobs_lr: 2
-  weight_decay: 2
-  weight_decay: 0
+  param {
+    lr_mult: 1
+    decay_mult: 2
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
   convolution_param {
     num_output: 64
     kernel_size: 5
@@ -147,37 +147,42 @@ layers {
     }
   }
 }
-layers {
+layer {
   name: "relu3"
-  type: RELU
+  type: "ReLU"
   bottom: "conv3"
   top: "conv3"
 }
-layers {
+layer {
   name: "softmax"
-  type: SOFTMAX
+  type: "SpatialSoftmax"
   bottom: "conv3"
   top: "conv3"
-  softmax_param {
+  spatial_softmax_param {
     engine: CAFFE
     temperature: 1.0
     dimension: "spatial"
   }
 }
-layers {
+layer {
   name: "fc_images"
-  type: INNER_PRODUCT
+  type: "InnerProduct"
   bottom: "conv3"
   top: "expected_xy"
-  blobs_lr: 0
-  blobs_lr: 0
-  weight_decay: 0
-  weight_decay: 0
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
+  param {
+    lr_mult: 0
+    decay_mult: 0
+  }
   inner_product_param {
-    num_output: 128
+    num_output: 2  # dimensionality will actually be 2*num_channels
+    axis: -2
     weight_filler {
-      type: "imagexy"
-      channels: 64
+      type: "expectation"
+      expectation_option: "xy"
       width: 109
       height: 109
     }
@@ -189,17 +194,21 @@ layers {
 }
 
 
-layers {
+layer {
   name: "fc1_smaller"
-  type: INNER_PRODUCT
+  type: "InnerProduct"
   bottom: "expected_xy"
   top: "image_features_smaller"
-  blobs_lr: 5
-  blobs_lr: 10
-  weight_decay: 1
-  weight_decay: 0
+  param {
+    lr_mult: 5
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 10
+    decay_mult: 0
+  }
   inner_product_param {
-    num_output: 6
+    num_output: 9
     weight_filler {
       type: "gaussian"
       std: 0.01
@@ -210,25 +219,25 @@ layers {
     }
   }
 }
-layers {
+layer {
   name: "euc_distance"
-  type: EUCLIDEAN_DISTANCE
+  type: "EuclideanDistance"
   bottom: "image_features_smaller"
   bottom: "position"
   top: "average_distance"
   include: {phase: TEST}
 }
 
-layers {
+layer {
   name: "loss"
-  type: EUCLIDEAN_LOSS
+  type: "EuclideanLoss"
   bottom: "image_features_smaller"
   bottom: "position"
   top: "euclidean_error"
   loss_weight: 1
 }
 
-#layers {
+#layer {
 #  name: "output_lrn"
 #  type: HDF5_OUTPUT
 #  hdf5_output_param {
