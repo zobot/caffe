@@ -41,8 +41,6 @@ TYPED_TEST(SpatialSoftmaxLayerTest, TestForwardSpatial) {
   if (Caffe::mode() == Caffe::GPU) {
     typedef typename TypeParam::Dtype Dtype;
     LayerParameter layer_param;
-    const char* dimension = "spatial";
-    layer_param.mutable_spatial_softmax_param()->set_dimension(dimension);
     SpatialSoftmaxLayer<Dtype> layer(layer_param);
     layer.SetUp(this->blob_bottom_vec_, this->blob_top_vec_);
     layer.Forward(this->blob_bottom_vec_, this->blob_top_vec_);
@@ -86,8 +84,6 @@ TYPED_TEST(SpatialSoftmaxLayerTest, TestGradientSpatial) {
   if (Caffe::mode() == Caffe::GPU) {
     typedef typename TypeParam::Dtype Dtype;
     LayerParameter layer_param;
-    const char* dimension = "spatial";
-    layer_param.mutable_spatial_softmax_param()->set_dimension(dimension);
     layer_param.mutable_spatial_softmax_param()->set_temperature(0.1);
     SpatialSoftmaxLayer<Dtype> layer(layer_param);
     GradientChecker<Dtype> checker(1e-2, 1e-2);

@@ -486,7 +486,6 @@ class SpatialSoftmaxLayer : public Layer<Dtype> {
   // spatial specific data
   Blob<Dtype> temp_data_;
   Dtype temp_;
-  string dimension_;
 };
 
 }  // namespace caffe
