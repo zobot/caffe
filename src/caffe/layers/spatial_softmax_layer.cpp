@@ -48,5 +48,6 @@ STUB_GPU(SpatialSoftmaxLayer);
 #endif
 
 INSTANTIATE_CLASS(SpatialSoftmaxLayer);
+REGISTER_LAYER_CLASS(SpatialSoftmax);
 
 }  // namespace caffe

@@ -1,0 +1,1 @@
+../caffe/examples/vgps/data/train_pose3_rand_nomean.h5

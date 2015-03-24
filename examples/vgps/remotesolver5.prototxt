@@ -1,0 +1,15 @@
+train_net: "remotemodel5.prototxt"
+solver_type: SGD
+average_loss: 50
+test_interval: 2000
+base_lr: 0.00025
+lr_policy: "step"
+gamma: 0.1
+stepsize: 4000
+display: 100
+max_iter: 500
+momentum: 0.9
+weight_decay: 0.005
+snapshot: 1000
+snapshot_prefix: "matnet5"
+solver_mode: GPU

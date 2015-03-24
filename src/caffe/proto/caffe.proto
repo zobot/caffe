@@ -216,6 +216,10 @@ message SolverState {
 enum Phase {
    TRAIN = 0;
    TEST = 1;
+   FORWARDA = 2;
+   FORWARDB = 3;
+   TRAINA = 4; // Not sure if used. Probably not since phase must be TRAIN to train.
+   TRAINB = 5; // Not sure if used. Probably not since phase must be TRAIN to train.
 }
 
 message NetState {

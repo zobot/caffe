@@ -1,0 +1,238 @@
+name: "JointAndImageStateRegressionNet"
+layers {
+  name: "data_in"
+  type: MEMORY_DATA
+  top: "rgb_input"
+  top: "joint_input"
+  top: "action_input"
+  top: "prec_input"
+  memory_data_param {
+    batch_size: 50
+    channels1: 3
+    width1: 240
+    height1: 240
+    channels2: 39
+    channels3: 7
+    channels4: 7
+    height4: 7
+  }
+  include: { phase: TRAIN }
+}
+
+# Image Processing Layers
+layers {
+  name: "conv1"
+  type: CONVOLUTION
+  bottom: "rgb_input"
+  top: "conv1"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 0
+  weight_decay: 0
+  convolution_param {
+    num_output: 32
+    kernel_size: 11
+    stride: 2
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layers {
+  name: "relu1"
+  type: RELU
+  bottom: "conv1"
+  top: "conv1"
+}
+layers {
+  name: "conv2"
+  type: CONVOLUTION
+  bottom: "conv1"
+  top: "conv2"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 0
+  weight_decay: 0
+  convolution_param {
+    num_output: 32
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layers {
+  name: "relu2"
+  type: RELU
+  bottom: "conv2"
+  top: "conv2"
+}
+layers {
+  name: "conv3"
+  type: CONVOLUTION
+  bottom: "conv2"
+  top: "conv3"
+  blobs_lr: 1
+  blobs_lr: 2
+  weight_decay: 0
+  weight_decay: 0
+  convolution_param {
+    num_output: 32
+    kernel_size: 5
+    stride: 1
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layers {
+  name: "relu3"
+  type: RELU
+  bottom: "conv3"
+  top: "conv3"
+}
+layers {
+  name: "softmax"
+  type: SOFTMAX
+  bottom: "conv3"
+  top: "image_out"
+  softmax_param {
+    engine: CAFFE
+    temperature: 1.0
+  }
+}
+layers {
+  name: "fc_images"
+  type: INNER_PRODUCT
+  bottom: "image_out"
+  top: "image_features"
+  blobs_lr: 0
+  blobs_lr: 0
+  weight_decay: 0
+  weight_decay: 0
+  inner_product_param {
+    num_output: 64
+    weight_filler {
+      type: "imagexy"
+      channels: 32
+      width: 107
+      height: 107
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+# Concat image layers and joint states
+layers {
+  name: "concat_img_joint"
+  type: CONCAT
+  bottom: "joint_input"
+  bottom: "image_features"
+  top: "concat_img_joint"
+}
+
+layers {
+  name: "fc1_both"
+  type: INNER_PRODUCT
+  bottom: "concat_img_joint"
+  top: "fc1_both"
+  blobs_lr: 2
+  blobs_lr: 4
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 40
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layers {
+  name: "relu2_both"
+  type: RELU
+  bottom: "fc1_both"
+  top: "fc1_both"
+}
+layers {
+  name: "fc2_both"
+  type: INNER_PRODUCT
+  bottom: "fc1_both"
+  top: "fc2_both"
+  blobs_lr: 2
+  blobs_lr: 4
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 40
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layers {
+  name: "relu3_both"
+  type: RELU
+  bottom: "fc2_both"
+  top: "fc2_both"
+}
+layers {
+  name: "fc3_both"
+  type: INNER_PRODUCT
+  bottom: "fc2_both"
+  top: "nn_output"
+  blobs_lr: 2
+  blobs_lr: 4
+  weight_decay: 1
+  weight_decay: 0
+  inner_product_param {
+    num_output: 7
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layers {
+  name: "loss"
+  type: WEIGHTED_EUCLIDEAN_LOSS
+  bottom: "nn_output"
+  bottom: "action_input"
+  bottom: "prec_input"
+  top: "euclidean_error"
+  include: { phase: TRAIN }
+}
+
