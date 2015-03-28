@@ -632,6 +632,9 @@ message LRNParameter {
 
 // Message that stores parameters used by MemoryDataLayer
 message MemoryDataParameter {
+  repeated BlobShape input_shapes = 5;
+
+  // Deprecated, use input_shapes
   optional uint32 batch_size = 1;
   optional uint32 channels = 2;
   optional uint32 height = 3;

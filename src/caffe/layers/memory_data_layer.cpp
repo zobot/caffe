@@ -11,25 +11,22 @@ namespace caffe {
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::DataLayerSetUp(const vector<Blob<Dtype>*>& bottom,
      const vector<Blob<Dtype>*>& top) {
-  batch_size_ = this->layer_param_.memory_data_param().batch_size();
-  channels_ = this->layer_param_.memory_data_param().channels();
-  height_ = this->layer_param_.memory_data_param().height();
-  width_ = this->layer_param_.memory_data_param().width();
-  size_ = channels_ * height_ * width_;
-  CHECK_GT(batch_size_ * size_, 0) <<
-      "batch_size, channels, height, and width must be specified and"
-      " positive in memory_data_param";
-  vector<int> label_shape(1, batch_size_);
-  top[0]->Reshape(batch_size_, channels_, height_, width_);
-  top[1]->Reshape(label_shape);
-  added_data_.Reshape(batch_size_, channels_, height_, width_);
-  added_label_.Reshape(label_shape);
-  data_ = NULL;
-  labels_ = NULL;
-  added_data_.cpu_data();
-  added_label_.cpu_data();
+  const MemoryDataParameter param = this->layer_param_.memory_data_param();
+  batch_size_ = param.input_shapes(0).dim(0);
+  for (int i = 0; i < param.input_shapes_size(); ++i) {
+    top[i]->Reshape(param.input_shapes(i));
+    CHECK_EQ(batch_size_, param.input_shapes(i).dim(0)) <<
+      "Inconsistent batch sizes across blobs in memory data layer";
+    channels_.push_back(param.input_shapes(i).dim(1));
+    height_.push_back(param.input_shapes(i).dim(2));
+    width_.push_back(param.input_shapes(i).dim(3));
+    size_.push_back(channels_[i] * height_[i] * width_[i]);
+    // added_data_[i].Reshape(batch_size_, channels_[i], height_[i], width_[i]);
+    data_.push_back(NULL);
+  }
 }
 
+/*
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::AddDatumVector(const vector<Datum>& datum_vector) {
   CHECK(!has_new_data_) <<
@@ -52,7 +49,9 @@ void MemoryDataLayer<Dtype>::AddDatumVector(const vector<Datum>& datum_vector) {
   Reset(top_data, top_label, num);
   has_new_data_ = true;
 }
+*/
 
+/*
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::AddMatVector(const vector<cv::Mat>& mat_vector,
     const vector<int>& labels) {
@@ -76,7 +75,27 @@ void MemoryDataLayer<Dtype>::AddMatVector(const vector<cv::Mat>& mat_vector,
   Reset(top_data, top_label, num);
   has_new_data_ = true;
 }
+*/
 
+
+template <typename Dtype>
+void MemoryDataLayer<Dtype>::Reset(vector<Dtype*> data, int n) {
+  CHECK_EQ(n % batch_size_, 0) << "n must be a multiple of batch size";
+  for (int i = 0; i < data.size(); ++i) {
+    CHECK(data[i]);
+    data_[i] = data[i];
+  }
+  // Warn with transformation parameters since a memory array is meant to
+  // be generic and no transformations are done with Reset().
+  if (this->layer_param_.has_transform_param()) {
+    LOG(WARNING) << this->type() << " does not transform array data on Reset()";
+  }
+  n_ = n;
+  pos_ = 0;
+}
+
+
+/*
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::Reset(Dtype* data, Dtype* labels, int n) {
   CHECK(data);
@@ -92,7 +111,9 @@ void MemoryDataLayer<Dtype>::Reset(Dtype* data, Dtype* labels, int n) {
   n_ = n;
   pos_ = 0;
 }
+*/
 
+/*
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::set_batch_size(int new_size) {
   CHECK(!has_new_data_) <<
@@ -101,18 +122,19 @@ void MemoryDataLayer<Dtype>::set_batch_size(int new_size) {
   added_data_.Reshape(batch_size_, channels_, height_, width_);
   added_label_.Reshape(batch_size_, 1, 1, 1);
 }
+*/
 
 template <typename Dtype>
 void MemoryDataLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
-  CHECK(data_) << "MemoryDataLayer needs to be initalized by calling Reset";
-  top[0]->Reshape(batch_size_, channels_, height_, width_);
-  top[1]->Reshape(batch_size_, 1, 1, 1);
-  top[0]->set_cpu_data(data_ + pos_ * size_);
-  top[1]->set_cpu_data(labels_ + pos_);
+  for (int i = 0; i < top.size(); ++i) {
+    CHECK(data_[i]) << "MemoryDataLayer needs to be initalized by calling Reset";
+    top[i]->Reshape(batch_size_, channels_[i], height_[i], width_[i]);
+    top[i]->set_cpu_data(data_[i] + pos_ * size_[i]);
+  }
   pos_ = (pos_ + batch_size_) % n_;
-  if (pos_ == 0)
-    has_new_data_ = false;
+  //if (pos_ == 0)
+  //has_new_data_ = false;
 }
 
 INSTANTIATE_CLASS(MemoryDataLayer);
