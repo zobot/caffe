@@ -99,6 +99,8 @@ void Net_Save(const Net<Dtype>& net, string filename) {
   WriteProtoToBinaryFile(net_param, filename.c_str());
 }
 
+// TODO(cfinn) Backwards compatibility of md layer
+/*
 void Net_SetInputArrays(Net<Dtype>* net, bp::object data_obj,
     bp::object labels_obj) {
   // check that this network has an input MemoryDataLayer
@@ -130,6 +132,7 @@ void Net_SetInputArrays(Net<Dtype>* net, bp::object data_obj,
       static_cast<Dtype*>(PyArray_DATA(labels_arr)),
       PyArray_DIMS(data_arr)[0]);
 }
+*/
 
 Solver<Dtype>* GetSolverFromFile(const string& filename) {
   SolverParameter param;
@@ -224,8 +227,8 @@ BOOST_PYTHON_MODULE(_caffe) {
     .add_property("_outputs",
         bp::make_function(&Net<Dtype>::output_blob_indices,
         bp::return_value_policy<bp::copy_const_reference>()))
-    .def("_set_input_arrays", &Net_SetInputArrays,
-        bp::with_custodian_and_ward<1, 2, bp::with_custodian_and_ward<1, 3> >())
+//    .def("_set_input_arrays", &Net_SetInputArrays,
+//        bp::with_custodian_and_ward<1, 2, bp::with_custodian_and_ward<1, 3> >())
     .def("save", &Net_Save);
 
   bp::class_<Blob<Dtype>, shared_ptr<Blob<Dtype> >, boost::noncopyable>(
