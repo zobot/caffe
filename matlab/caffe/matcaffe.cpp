@@ -117,131 +117,33 @@ static mxArray* do_forward(const mxArray* const bottom) {
 }
 */
 
-// Input is a cell array of 4 4-D arrays containing image and joint info
+// Input is a cell array of k n-D arrays containing image and joint info
 static void vgps_train(const mxArray* const bottom) {
-  vector<shared_ptr<Blob<float> > > input_blobs;
-  input_blobs.resize(4);
-
-  const mxArray* const rgb = mxGetCell(bottom, 0);
-  const float* const rgb_ptr = reinterpret_cast<const float* const>(mxGetPr(rgb));
-  const mxArray* const joint = mxGetCell(bottom, 1);
-  const float* const joint_ptr = reinterpret_cast<const float* const>(mxGetPr(joint));
-  const mxArray* const action = mxGetCell(bottom, 2);
-  const float* const action_ptr = reinterpret_cast<const float* const>(mxGetPr(action));
-  const mxArray* const prec = mxGetCell(bottom, 3);
-  const float* const prec_ptr = reinterpret_cast<const float* const>(mxGetPr(prec));
-  CHECK(mxIsSingle(rgb))
-      << "MatCaffe require single-precision float point data";
-  CHECK(mxIsSingle(joint))
-      << "MatCaffe require single-precision float point data";
-
-  const int num_samples = mxGetDimensions(action)[1];
-  int channels = 1;
-  int height = 1;
-  int width = 1;
-  if (mxGetNumberOfDimensions(rgb) == 4) {
-    channels = mxGetDimensions(rgb)[2];
-    height = mxGetDimensions(rgb)[1];
-    width = mxGetDimensions(rgb)[0];
-  }
-  else {
-    channels = mxGetDimensions(rgb)[0];
-  }
-  const int dX = mxGetDimensions(joint)[0];
-  const int dU = mxGetDimensions(action)[0];
-  // TODO - add check for dimensions from memory data layer dimensions.
-  //CHECK_EQ(channels, 3) << "Channel dimension incorrect";
-  //CHECK_EQ(height, 240) << "Image height dimension incorrect";
-  //CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
-  CHECK_EQ(dU, 7) << "Action dimension incorrect: " << dU;
-
-  input_blobs[0] = shared_ptr<Blob<float> >(new Blob<float>());
-  input_blobs[1] = shared_ptr<Blob<float> >(new Blob<float>());
-  input_blobs[2] = shared_ptr<Blob<float> >(new Blob<float>());
-  input_blobs[3] = shared_ptr<Blob<float> >(new Blob<float>());
-
-  LOG(INFO) << "Image has size: " << width << " x " << height << " x " << channels;
-  input_blobs[0]->Reshape(num_samples, channels, height, width);
-  input_blobs[1]->Reshape(num_samples, dX, 1, 1);
-  input_blobs[2]->Reshape(num_samples, dU, 1, 1);
-  input_blobs[3]->Reshape(num_samples, dU, dU, 1);
-
-  caffe_copy(input_blobs[0]->count(), rgb_ptr, input_blobs[0]->mutable_cpu_data());
-  caffe_copy(input_blobs[1]->count(), joint_ptr, input_blobs[1]->mutable_cpu_data());
-  caffe_copy(input_blobs[2]->count(), action_ptr, input_blobs[2]->mutable_cpu_data());
-  caffe_copy(input_blobs[3]->count(), prec_ptr, input_blobs[3]->mutable_cpu_data());
 
   shared_ptr<MemoryDataLayer<float> > md_layer =
     boost::dynamic_pointer_cast<MemoryDataLayer<float> >(solver_->net()->layers()[0]);
   vector<float*> inputs;
-  inputs.push_back(input_blobs[0]->mutable_cpu_data());
-  inputs.push_back(input_blobs[1]->mutable_cpu_data());
-  inputs.push_back(input_blobs[2]->mutable_cpu_data());
-  inputs.push_back(input_blobs[3]->mutable_cpu_data());
-  md_layer->Reset(inputs, num_samples);
-  //md_layer->Reset(input_blobs[0]->mutable_cpu_data(),
-  //                input_blobs[1]->mutable_cpu_data(),
-  //                input_blobs[2]->mutable_cpu_data(),
-  //                input_blobs[3]->mutable_cpu_data(), num_samples);
+  int num_samples;
 
+  for (int i = 0; i < mxGetNumberOfElements(bottom); ++i) {
+    mxArray* const data = mxGetCell(bottom, i);
+    float* const data_ptr = reinterpret_cast<float* const>(mxGetPr(data));
+    CHECK(mxIsSingle(data)) << "MatCaffe require single-precision float point data";
+    inputs.push_back(data_ptr);
+
+    // Only need to figure out the number of samples once.
+    if (i == 0) {
+      const int num_dim = mxGetNumberOfDimensions(data);
+      num_samples = mxGetDimensions(data)[num_dim-1]; // dimensions reversed...
+      LOG(INFO) << "Size of first dim is" << mxGetDimensions(data)[0];
+      LOG(INFO) << "Size of second dim is" << mxGetDimensions(data)[1];
+    }
+  }
+
+  md_layer->Reset(inputs, num_samples);
   LOG(INFO) << "Starting Solve";
   solver_->Solve();
 }
-
-/*
-// Input is a cell array of 4 4-D arrays containing image and joint info
-static void vgps_trainb(const mxArray* const bottom) {
-  vector<shared_ptr<Blob<float> > > input_blobs;
-  input_blobs.resize(2);
-
-  const mxArray* const rgb = mxGetCell(bottom, 0);
-  const float* const rgb_ptr = reinterpret_cast<const float* const>(mxGetPr(rgb));
-  const mxArray* const joint = mxGetCell(bottom, 1);
-  const float* const joint_ptr = reinterpret_cast<const float* const>(mxGetPr(joint));
-  const mxArray* const action = mxGetCell(bottom, 2);
-  const float* const action_ptr = reinterpret_cast<const float* const>(mxGetPr(action));
-  const mxArray* const prec = mxGetCell(bottom, 3);
-  const float* const prec_ptr = reinterpret_cast<const float* const>(mxGetPr(prec));
-  CHECK(mxIsSingle(rgb))
-      << "MatCaffe require single-precision float point data";
-  CHECK(mxIsSingle(joint))
-      << "MatCaffe require single-precision float point data";
-
-  const int num_samples = mxGetDimensions(rgb)[3];
-  const int channels = mxGetDimensions(rgb)[2];
-  const int dX = mxGetDimensions(joint)[0];
-  const int dU = mxGetDimensions(action)[0];
-  //CHECK_EQ(dX, 21) << "Joint state dimension incorrect: " << dX;
-  CHECK_EQ(dU, 7) << "Action dimension incorrect: " << dU;
-
-  input_blobs[0] = shared_ptr<Blob<float> >(new Blob<float>());
-  input_blobs[1] = shared_ptr<Blob<float> >(new Blob<float>());
-  input_blobs[2] = shared_ptr<Blob<float> >(new Blob<float>());
-  input_blobs[3] = shared_ptr<Blob<float> >(new Blob<float>());
-
-  input_blobs[0]->Reshape(num_samples, channels, 1, 1);
-  input_blobs[1]->Reshape(num_samples, dX, 1, 1);
-  input_blobs[2]->Reshape(num_samples, dU, 1, 1);
-  input_blobs[3]->Reshape(num_samples, dU, dU, 1);
-
-  caffe_copy(input_blobs[0]->count(), rgb_ptr, input_blobs[0]->mutable_cpu_data());
-  caffe_copy(input_blobs[1]->count(), joint_ptr, input_blobs[1]->mutable_cpu_data());
-  caffe_copy(input_blobs[2]->count(), action_ptr, input_blobs[2]->mutable_cpu_data());
-  caffe_copy(input_blobs[3]->count(), prec_ptr, input_blobs[3]->mutable_cpu_data());
-
-  shared_ptr<MemoryDataLayer<float> > md_layer =
-    boost::dynamic_pointer_cast<MemoryDataLayer<float> >(solver_->net()->layers()[0]);
-  vector<float*> inputs;
-  inputs.push_back(input_blobs[0]->mutable_cpu_data());
-  inputs.push_back(input_blobs[1]->mutable_cpu_data());
-  inputs.push_back(input_blobs[2]->mutable_cpu_data());
-  inputs.push_back(input_blobs[3]->mutable_cpu_data());
-  md_layer->Reset(inputs, num_samples);
-
-  LOG(INFO) << "Starting Solve";
-  solver_->Solve();
-}
-*/
 
 // Input is a cell array of 4 4-D arrays containing image and joint info
 static mxArray* vgps_forward(const mxArray* const bottom) {
@@ -382,45 +284,29 @@ static mxArray* vgps_forwarda_only(const mxArray* const bottom) {
 }
 // Input is a cell array of 2 4-D arrays containing image and joint info
 static mxArray* vgps_forward_only(const mxArray* const bottom) {
-  vector<shared_ptr<Blob<float> > > input_blobs;
-  input_blobs.resize(2);
-
-  const mxArray* const rgb = mxGetCell(bottom, 0);
-  const float* const rgb_ptr = reinterpret_cast<const float* const>(mxGetPr(rgb));
-  const mxArray* const joint = mxGetCell(bottom, 1);
-  const float* const joint_ptr = reinterpret_cast<const float* const>(mxGetPr(joint));
-  CHECK(mxIsSingle(rgb))
-      << "MatCaffe require single-precision float point data";
-  CHECK(mxIsSingle(joint))
-      << "MatCaffe require single-precision float point data";
-
-  const int num_samples = mxGetDimensions(rgb)[3];
-  const int channels = mxGetDimensions(rgb)[2];
-  const int height = mxGetDimensions(rgb)[0];
-  const int width = mxGetDimensions(rgb)[0];
-  const int dX = mxGetDimensions(joint)[0];
-  CHECK_EQ(channels, 3);
-  CHECK_EQ(height, 240);
-  //CHECK_EQ(dX, 21);
-
-  input_blobs[0] = shared_ptr<Blob<float> >(new Blob<float>());
-  input_blobs[1] = shared_ptr<Blob<float> >(new Blob<float>());
-
-  input_blobs[0]->Reshape(num_samples, channels, height, width);
-  input_blobs[1]->Reshape(num_samples, dX, 1, 1);
-
-  caffe_copy(input_blobs[0]->count(), rgb_ptr, input_blobs[0]->mutable_cpu_data());
-  caffe_copy(input_blobs[1]->count(), joint_ptr, input_blobs[1]->mutable_cpu_data());
-
+  //vector<shared_ptr<Blob<float> > > input_blobs;
+  //input_blobs.resize(2);
   shared_ptr<MemoryDataLayer<float> > md_layer =
     boost::dynamic_pointer_cast<MemoryDataLayer<float> >(net_->layers()[0]);
   vector<float*> inputs;
-  inputs.push_back(input_blobs[0]->mutable_cpu_data());
-  inputs.push_back(input_blobs[1]->mutable_cpu_data());
+  int num_samples;
+
+  for (int i = 0; i < mxGetNumberOfElements(bottom); ++i) {
+    mxArray* const data = mxGetCell(bottom, i);
+    float* const data_ptr = reinterpret_cast<float* const>(mxGetPr(data));
+    CHECK(mxIsSingle(data)) << "MatCaffe require single-precision float point data";
+    inputs.push_back(data_ptr);
+
+    // Only need to figure out the number of samples once.
+    if (i == 0) {
+      const int num_dim = mxGetNumberOfDimensions(data);
+      num_samples = mxGetDimensions(data)[num_dim-1]; // dimensions reversed...
+    }
+  }
+
   md_layer->Reset(inputs, num_samples);
 
   float initial_loss;
-  LOG(INFO) << "Running forward pass";
   const vector<Blob<float>*>& output_blobs = net_->ForwardPrefilled(&initial_loss);
   CHECK_EQ(output_blobs.size(), 1);
 
