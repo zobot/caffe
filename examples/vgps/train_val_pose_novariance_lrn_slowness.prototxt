@@ -6,7 +6,7 @@ layer {
   top: "rgb_frames+0"
   top: "rgb_frames+1"
   hdf5_data_param {
-    source: "examples/vgps/train_pose.txt"
+    source: "examples/vgps/train_pose_slow.txt"
     batch_size: 25
   }
   include: { phase: TRAIN }
@@ -18,7 +18,7 @@ layer {
   top: "rgb_frames+0"
   top: "rgb_frames+1"
   hdf5_data_param {
-    source: "examples/vgps/val_pose.txt"
+    source: "examples/vgps/val_pose_slow.txt"
     batch_size: 10
   }
   include: {
@@ -33,7 +33,7 @@ layer {
   top: "rgb_frames+0"
   top: "rgb_frames+1"
   hdf5_data_param {
-    source: "examples/vgps/train_pose.txt"
+    source: "examples/vgps/train_pose_slow.txt"
     batch_size: 10
   }
   include: {
@@ -175,7 +175,7 @@ layer {
   spatial_softmax_param {
     engine: CAFFE
     temperature: 1.0
-    dimension: "spatial"
+#    dimension: "spatial"
   }
 }
 layer {

@@ -1,1 +1,0 @@
-../caffe/examples/vgps/data/val_oval.h5

@@ -1,4 +1,4 @@
-net: "examples/vgps/train_val_pose_novariance_lrn.prototxt"
+net: "examples/vgps/train_val_pose_novariance_lrn_slowness.prototxt"
 solver_type: SGD
 test_state: { stage: 'test-on-val' }
 test_iter: 20 # normally 20
@@ -14,5 +14,5 @@ max_iter: 12000
 momentum: 0.9
 weight_decay: 0.005
 snapshot: 1000
-snapshot_prefix: "examples/vgps/snapshot/test_newrepo"
+snapshot_prefix: "examples/vgps/snapshot/slow"
 solver_mode: GPU

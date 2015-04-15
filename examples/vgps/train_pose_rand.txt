@@ -1,1 +1,0 @@
-../caffe/examples/vgps/data/train_shuffle_2700.h5

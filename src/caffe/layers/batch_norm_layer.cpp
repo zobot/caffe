@@ -11,11 +11,8 @@ template <typename Dtype>
 void BatchNormLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
       const vector<Blob<Dtype>*>& top) {
   moving_average_fraction_ = this->layer_param_.batch_norm_param().moving_average_fraction();
-  //LOG(INFO) << "1) moving_average_fraction .................................";
-  //LOG(INFO) << moving_average_fraction_;
   use_global_stats_ = this->layer_param_.batch_norm_param().use_global_stats();
   channels_ = bottom[0]->channels();
-  // Check if we need to set up the weights
   if (this->blobs_.size() > 0) {
     LOG(INFO) << "Skipping parameter initialization";
   } else {
@@ -23,9 +20,6 @@ void BatchNormLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
     this->blobs_[0].reset(new Blob<Dtype>(1, channels_, 1, 1));
     this->blobs_[1].reset(new Blob<Dtype>(1, channels_, 1, 1));
     this->blobs_[2].reset(new Blob<Dtype>(1, 1, 1, 1));
-//    this->blobs_[0]->Reshape(1,channels_,1,1);
-//    this->blobs_[1]->Reshape(1,channels_,1,1);
-//    this->blobs_[2]->Reshape(1,1,1,1);
     for(int i = 0; i<3; ++i){
       caffe_gpu_set(this->blobs_[i]->count(),Dtype(0),this->blobs_[i]->mutable_gpu_data());
     }
@@ -60,17 +54,11 @@ void BatchNormLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
   int num = bottom[0]->num();
   int channels = bottom[0]->channels();
   int spatial_dim = bottom[0]->height() * bottom[0]->width();
-  // XXX this should not be here
   Dtype eps = 1e-5;
 
-  // elementwise square
-  // XXX how does this compare to caffe_mul?
     caffe_powx(bottom[0]->count(), bottom_data, Dtype(2),
         temp_.mutable_cpu_data());
 
-    // computes variance using var(X) = E(X^2) - (EX)^2
-
-  // mean of bottom and bottom ** 2
   caffe_set(mean_.count(), static_cast<Dtype>(0), mean_.mutable_cpu_data());
   caffe_set(variance_.count(), static_cast<Dtype>(0), variance_.mutable_cpu_data());
   if(use_global_stats_){
@@ -87,8 +75,6 @@ void BatchNormLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
           temp_.cpu_data() + temp_.offset(n), sum_multiplier_.cpu_data(), 1.,
           variance_.mutable_cpu_data());
     }
-    //LOG(INFO) << "1) moving_average_fraction .................................";
-    //LOG(INFO) << moving_average_fraction_;
     caffe_scal(mean_.count(),moving_average_fraction_,this->blobs_[0]->mutable_cpu_data());
     caffe_scal(mean_.count(),moving_average_fraction_,this->blobs_[1]->mutable_cpu_data());
     this->blobs_[2]->mutable_cpu_data()[0]*=moving_average_fraction_;
@@ -96,20 +82,15 @@ void BatchNormLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     caffe_add(mean_.count(),mean_.gpu_data(),this->blobs_[0]->cpu_data(),this->blobs_[0]->mutable_cpu_data());
     caffe_add(mean_.count(),variance_.gpu_data(),this->blobs_[1]->cpu_data(),this->blobs_[1]->mutable_cpu_data());
   }
-  // elementwise square of mean
   caffe_powx(mean_.count(), mean_.cpu_data(), Dtype(2), temp_.mutable_cpu_data());
 
     caffe_sub(mean_.count(), variance_.cpu_data(), temp_.cpu_data(),
-        variance_.mutable_cpu_data());  // variance
+        variance_.mutable_cpu_data()); 
 
-    // normalize variance
   caffe_add_scalar(variance_.count(), eps, variance_.mutable_cpu_data());
     caffe_powx(variance_.count(), variance_.cpu_data(), Dtype(0.5),
           variance_.mutable_cpu_data());
 
-  // do mean and variance normalization
-  // subtract mean
-  // XXX forward should work in place, but backward doesn't, for now
   if (bottom[0] != top[0]) {
     caffe_copy(bottom[0]->count(), bottom_data, top_data);
   }
