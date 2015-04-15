@@ -15,10 +15,17 @@ void BatchNormLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   int num = bottom[0]->num();
   int channels = bottom[0]->channels();
   int spatial_dim = bottom[0]->height() * bottom[0]->width();
+  // XXX this should not be here
   Dtype eps = 1e-5;
-
+  
+  // elementwise square
+  // XXX how does this compare to caffe_gpu_mul?
   caffe_gpu_powx(bottom[0]->count(), bottom_data, Dtype(2),
       temp_.mutable_gpu_data());
+
+  // computes variance using var(X) = E(X^2) - (EX)^2
+
+  // mean of bottom and bottom ** 2
 
   if(use_global_stats_){
     caffe_copy(mean_.count(),this->blobs_[0]->gpu_data(),mean_.mutable_gpu_data());
@@ -43,6 +50,7 @@ void BatchNormLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
     caffe_gpu_add(mean_.count(),mean_.gpu_data(),this->blobs_[0]->gpu_data(),this->blobs_[0]->mutable_gpu_data());
     caffe_gpu_add(mean_.count(),variance_.gpu_data(),this->blobs_[1]->gpu_data(),this->blobs_[1]->mutable_gpu_data());
   }
+  // elementwise square of mean
   caffe_gpu_powx(mean_.count(), mean_.gpu_data(), Dtype(2), temp_.mutable_gpu_data());
 
   caffe_gpu_sub(mean_.count(), variance_.gpu_data(), temp_.gpu_data(),
@@ -52,7 +60,10 @@ void BatchNormLayer<Dtype>::Forward_gpu(const vector<Blob<Dtype>*>& bottom,
   caffe_gpu_powx(variance_.count(), variance_.gpu_data(), Dtype(0.5),
         variance_.mutable_gpu_data());
 
+  // do mean and variance normalization
+  // subtract mean
   caffe_copy(bottom[0]->count(), bottom_data, top_data);
+
   caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, num, channels, 1, 1,
         num_sum_.gpu_data(), mean_.gpu_data(), 0., num_by_chans_.mutable_gpu_data());
   caffe_gpu_gemm<Dtype>(CblasNoTrans, CblasNoTrans, channels*num, spatial_dim, 1, -1,
