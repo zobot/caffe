@@ -13,6 +13,7 @@ void BatchNormLayer<Dtype>::LayerSetUp(const vector<Blob<Dtype>*>& bottom,
   moving_average_fraction_ = this->layer_param_.batch_norm_param().moving_average_fraction();
   use_global_stats_ = this->layer_param_.batch_norm_param().use_global_stats();
   channels_ = bottom[0]->channels();
+  // Check if we need to set up the weights
   if (this->blobs_.size() > 0) {
     LOG(INFO) << "Skipping parameter initialization";
   } else {
@@ -54,11 +55,15 @@ void BatchNormLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
   int num = bottom[0]->num();
   int channels = bottom[0]->channels();
   int spatial_dim = bottom[0]->height() * bottom[0]->width();
+  // XXX this should not be here
   Dtype eps = 1e-5;
-
+  // elementwise square
+  // XXX how does this compare to caffe_mul? 
     caffe_powx(bottom[0]->count(), bottom_data, Dtype(2),
         temp_.mutable_cpu_data());
-
+  
+  // computes variance using var(X) = E(X^2) - (EX)^2
+  // mean of bottom and bottom ** 2
   caffe_set(mean_.count(), static_cast<Dtype>(0), mean_.mutable_cpu_data());
   caffe_set(variance_.count(), static_cast<Dtype>(0), variance_.mutable_cpu_data());
   if(use_global_stats_){
@@ -82,6 +87,7 @@ void BatchNormLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     caffe_add(mean_.count(),mean_.gpu_data(),this->blobs_[0]->cpu_data(),this->blobs_[0]->mutable_cpu_data());
     caffe_add(mean_.count(),variance_.gpu_data(),this->blobs_[1]->cpu_data(),this->blobs_[1]->mutable_cpu_data());
   }
+  // elementwise square of mean
   caffe_powx(mean_.count(), mean_.cpu_data(), Dtype(2), temp_.mutable_cpu_data());
 
     caffe_sub(mean_.count(), variance_.cpu_data(), temp_.cpu_data(),
@@ -91,6 +97,9 @@ void BatchNormLayer<Dtype>::Forward_cpu(const vector<Blob<Dtype>*>& bottom,
     caffe_powx(variance_.count(), variance_.cpu_data(), Dtype(0.5),
           variance_.mutable_cpu_data());
 
+  // do mean and variance normalization
+  // subtract mean
+  // XXX forward should work in place, but backward doesn't, for now
   if (bottom[0] != top[0]) {
     caffe_copy(bottom[0]->count(), bottom_data, top_data);
   }
