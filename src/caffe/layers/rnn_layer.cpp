@@ -57,8 +57,11 @@ void RNNLayer<Dtype>::FillUnrolledNet(NetParameter* net_param) const {
   sum_param.mutable_eltwise_param()->set_operation(
       EltwiseParameter_EltwiseOp_SUM);
 
-  LayerParameter tanh_param;
-  tanh_param.set_type("TanH");
+  LayerParameter output_nonlinearity_param;
+  output_nonlinearity_param.set_type(this->layer_param_.rnn_param().output_nonlinearity());
+
+  LayerParameter recurrent_nonlinearity_param;
+  recurrent_nonlinearity_param.set_type(this->layer_param_.rnn_param().recurrent_nonlinearity());
 
   LayerParameter slice_param;
   slice_param.set_type("Slice");
@@ -176,7 +179,7 @@ void RNNLayer<Dtype>::FillUnrolledNet(NetParameter* net_param) const {
     }
     {
       LayerParameter* h_neuron_param = net_param->add_layer();
-      h_neuron_param->CopyFrom(tanh_param);
+      h_neuron_param->CopyFrom(recurrent_nonlinearity_param);
       h_neuron_param->set_name("h_neuron_" + ts);
       h_neuron_param->add_bottom("h_neuron_input_" + ts);
       h_neuron_param->add_top("h_" + ts);
@@ -200,7 +203,7 @@ void RNNLayer<Dtype>::FillUnrolledNet(NetParameter* net_param) const {
     //          = \tanh( W_ho_h_t )
     {
       LayerParameter* o_neuron_param = net_param->add_layer();
-      o_neuron_param->CopyFrom(tanh_param);
+      o_neuron_param->CopyFrom(output_nonlinearity_param);
       o_neuron_param->set_name("o_neuron_" + ts);
       o_neuron_param->add_bottom("W_ho_h_" + ts);
       o_neuron_param->add_top("o_" + ts);
