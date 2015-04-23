@@ -7,25 +7,25 @@ layer {
   top: "clip"
   memory_data_param {
     input_shapes {
-      dim: 100 # 10 sequences of 100
+      dim: 1000 # 10 sequences of 100
       dim: 1
       dim: 26
       dim: 1
     }
     input_shapes {
-      dim: 100
+      dim: 1000
       dim: 7
       dim: 1
       dim: 1
     }
     input_shapes {
-      dim: 100
+      dim: 1000
       dim: 7
       dim: 7
       dim: 1
     }
     input_shapes {
-      dim: 100
+      dim: 1000
       dim: 1
       dim: 1
       dim: 1
@@ -62,7 +62,7 @@ layer {
   top: "clip_reshape"
   reshape_param {
     shape {
-      dim: 100
+      dim: 1000
       dim: 1
     }
   }
@@ -121,7 +121,7 @@ layer {
   top: "fc1_both_reshape"
   reshape_param {
     shape {
-      dim: 100
+      dim: 1000
       dim: 1
       dim: 40
     }
