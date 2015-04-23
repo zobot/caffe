@@ -319,6 +319,7 @@ message LayerParameter {
   // The default for the engine is set by the ENGINE switch at compile-time.
   optional AccuracyParameter accuracy_param = 102;
   optional ArgMaxParameter argmax_param = 103;
+  optional BatchNormParameter batch_norm_param = 135;
   optional ConcatParameter concat_param = 104;
   optional ContrastiveLossParameter contrastive_loss_param = 105;
   optional ConvolutionParameter convolution_param = 106;
@@ -341,6 +342,7 @@ message LayerParameter {
   optional PowerParameter power_param = 122;
   optional PythonParameter python_param = 130;
   optional RecurrentParameter recurrent_param = 133;
+  optional RNNParameter rnn_param = 136;
   optional ReLUParameter relu_param = 123;
   optional ReshapeParameter reshape_param = 132;
   optional SigmoidParameter sigmoid_param = 124;
@@ -688,6 +690,12 @@ message PowerParameter {
   optional float shift = 3 [default = 0.0];
 }
 
+message BatchNormParameter {
+  optional bool use_global_stats = 3 [default = false];
+  optional float moving_average_fraction = 4 [default = 0.99];
+}
+
+
 // Message that stores parameters used by PythonLayer
 message PythonParameter {
   optional string module = 1;
@@ -712,6 +720,14 @@ message RecurrentParameter {
 
   // Whether to enable displaying debug_info in the unrolled recurrent net.
   optional bool debug_info = 4 [default = false];
+}
+
+// Message that stores parameters used by RNN Layer
+message RNNParameter {
+  // Nonlinearity on output (o_t)
+  optional string output_nonlinearity = 1 [default = "TanH"];
+  // Nonlinearity on recurrent state (h_t)
+  optional string recurrent_nonlinearity = 2 [default = "TanH"];
 }
 
 // Message that stores parameters used by ReLULayer
@@ -840,6 +856,7 @@ message V1LayerParameter {
     ACCURACY = 1;
     ARGMAX = 30;
     BNLL = 2;
+    BATCH_NORM = 40;
     CONCAT = 3;
     CONTRASTIVE_LOSS = 37;
     CONVOLUTION = 4;

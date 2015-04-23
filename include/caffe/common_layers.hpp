@@ -71,6 +71,44 @@ class ArgMaxLayer : public Layer<Dtype> {
 };
 
 /**
+* @brief Batch Normalization per-channel with scale & shift linear transform.
+*
+*/
+template <typename Dtype>
+class BatchNormLayer : public Layer<Dtype> {
+ public:
+  explicit BatchNormLayer(const LayerParameter& param)
+      : Layer<Dtype>(param) {}
+  virtual void LayerSetUp(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+  virtual void Reshape(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+
+  virtual inline const char* type() const { return "BatchNorm"; }
+  virtual inline int ExactNumBottomBlobs() const { return 1; }
+  virtual inline int ExactNumTopBlobs() const { return 1; }
+  
+ protected:
+  virtual void Forward_cpu(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+  virtual void Backward_cpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+  virtual void Forward_gpu(const vector<Blob<Dtype>*>& bottom,
+      const vector<Blob<Dtype>*>& top);
+  virtual void Backward_gpu(const vector<Blob<Dtype>*>& top,
+      const vector<bool>& propagate_down, const vector<Blob<Dtype>*>& bottom);
+
+  int channels_;
+  bool use_global_stats_;
+  Dtype moving_average_fraction_;
+  Blob<Dtype> mean_, variance_, temp_, num_sum_, num_by_chans_;
+
+  /// sum_multiplier is used to carry out sum using BLAS
+  Blob<Dtype> sum_multiplier_;
+
+};
+
+/**
  * @brief Takes at least two Blob%s and concatenates them along either the num
  *        or channel dimension, outputting the result.
  */
