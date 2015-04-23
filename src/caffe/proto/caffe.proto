@@ -274,7 +274,7 @@ message ParamSpec {
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
 //
-// LayerParameter next available layer-specific ID: 135 (last added: spatial_softmax_param)
+// LayerParameter next available layer-specific ID: 136 (last added: rnn_param)
 message LayerParameter {
   optional string name = 1; // the layer name
   optional string type = 2; // the layer type
