@@ -845,6 +845,8 @@ const char* UpgradeV1LayerType(const V1LayerParameter_LayerType type) {
     return "Accuracy";
   case V1LayerParameter_LayerType_ARGMAX:
     return "ArgMax";
+  case V1LayerParameter_LayerType_BATCH_NORM:
+    return "BatchNorm";
   case V1LayerParameter_LayerType_BNLL:
     return "BNLL";
   case V1LayerParameter_LayerType_CONCAT:
