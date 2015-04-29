@@ -144,7 +144,7 @@ layer {
 }
 layer {
   name: "rnn1"
-  type: "RNN"
+  type: "LSTM"
   bottom: "fc1_both_reshape"
   bottom: "clip_reshape"
   top: "rnn1"
