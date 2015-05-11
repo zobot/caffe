@@ -274,7 +274,7 @@ message ParamSpec {
 // NOTE
 // Update the next available ID when you add a new LayerParameter field.
 //
-// LayerParameter next available layer-specific ID: 136 (last added: rnn_param)
+// LayerParameter next available layer-specific ID: 138 (last added: gradient_clip_param)
 message LayerParameter {
   optional string name = 1; // the layer name
   optional string type = 2; // the layer type
@@ -329,6 +329,7 @@ message LayerParameter {
   optional EltwiseParameter eltwise_param = 110;
   optional EmbedParameter embed_param = 131;
   optional ExpParameter exp_param = 111;
+  optional GradientClipParameter gradient_clip_param = 137;
   optional HDF5DataParameter hdf5_data_param = 112;
   optional HDF5OutputParameter hdf5_output_param = 113;
   optional HingeLossParameter hinge_loss_param = 114;
@@ -544,6 +545,14 @@ message ExpParameter {
   optional float base = 1 [default = -1.0];
   optional float scale = 2 [default = 1.0];
   optional float shift = 3 [default = 0.0];
+}
+
+// Message that stores parameters used by ExpLayer
+message GradientClipParameter{
+  // GradientClipLayer acts as the identity for the forward layer,
+  // and for the backwards layer, but scales the l2 norm of the 
+  // diff down to clip_gradient if it exceeds that.
+  optional float gradient_clip = 1 [default = 5.0];
 }
 
 // Message that stores parameters used by HDF5DataLayer
