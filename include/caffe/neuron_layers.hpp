@@ -657,7 +657,7 @@ class ThresholdLayer : public NeuronLayer<Dtype> {
 /**
  * @brief GradientClipLayer acts as the identity for the forward layer,
  * and for the backwards layer, but scales the l2 norm of the 
- * diff down to clip_gradient if it exceeds that.
+ * diff down to clip_gradient if it exceeds that, for each slice of the batch_axis.
  *
  * TODO(dox): thorough documentation for Forward, Backward, and proto params.
  */
@@ -685,6 +685,7 @@ class GradientClipLayer : public NeuronLayer<Dtype> {
 
   int count_;
   Dtype gradient_clip;
+  int batch_axis;
 };
 
 }  // namespace caffe

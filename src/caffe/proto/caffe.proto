@@ -553,6 +553,7 @@ message GradientClipParameter{
   // and for the backwards layer, but scales the l2 norm of the 
   // diff down to clip_gradient if it exceeds that.
   optional float gradient_clip = 1 [default = 5.0];
+  optional uint32 batch_axis = 2 [default = 0];
 }
 
 // Message that stores parameters used by HDF5DataLayer
