@@ -66,6 +66,11 @@ void LSTMLayer<Dtype>::FillUnrolledNet(NetParameter* net_param) const {
   LayerParameter split_param;
   split_param.set_type("Split");
 
+  LayerParameter clip_param;
+  clip_param.set_type("GradientClip");
+  clip_param.mutable_gradient_clip_param()->set_gradient_clip(5.0);
+  clip_param.mutable_gradient_clip_param()->set_batch_axis(1);
+
   BlobShape input_shape;
   input_shape.add_dim(1);  // c_0 and h_0 are a single timestep
   input_shape.add_dim(this->N_);
@@ -136,6 +141,23 @@ void LSTMLayer<Dtype>::FillUnrolledNet(NetParameter* net_param) const {
     cont_slice_param->add_top("cont_" + ts);
     x_slice_param->add_top("W_xc_x_" + ts);
 
+    // Add layers to clip the gradients flowing through the 
+    // recurrent layers (h and c).
+    {
+      LayerParameter* clip_h_param = net_param->add_layer();
+      clip_h_param->CopyFrom(clip_param);
+      clip_h_param->set_name("h_clipped_" + tm1s);
+      clip_h_param->add_bottom("h_" + tm1s);
+      clip_h_param->add_top("h_clipped_" + tm1s);
+
+      LayerParameter* clip_c_param = net_param->add_layer();
+      clip_c_param->CopyFrom(clip_param);
+      clip_c_param->set_name("c_clipped_" + tm1s);
+      clip_c_param->add_bottom("c_" + tm1s);
+      clip_c_param->add_top("c_clipped_" + tm1s);
+    }
+
+
     // Add layers to flush the hidden state when beginning a new
     // sequence, as indicated by cont_t.
     //     h_conted_{t-1} := cont_t * h_{t-1}
@@ -148,7 +170,7 @@ void LSTMLayer<Dtype>::FillUnrolledNet(NetParameter* net_param) const {
       cont_h_param->CopyFrom(sum_param);
       cont_h_param->mutable_eltwise_param()->set_coeff_blob(true);
       cont_h_param->set_name("h_conted_" + tm1s);
-      cont_h_param->add_bottom("h_" + tm1s);
+      cont_h_param->add_bottom("h_clipped_" + tm1s);
       cont_h_param->add_bottom("cont_" + ts);
       cont_h_param->add_top("h_conted_" + tm1s);
     }
@@ -196,7 +218,7 @@ void LSTMLayer<Dtype>::FillUnrolledNet(NetParameter* net_param) const {
     {
       LayerParameter* lstm_unit_param = net_param->add_layer();
       lstm_unit_param->set_type("LSTMUnit");
-      lstm_unit_param->add_bottom("c_" + tm1s);
+      lstm_unit_param->add_bottom("c_clipped_" + tm1s);
       lstm_unit_param->add_bottom("gate_input_" + ts);
       lstm_unit_param->add_bottom("cont_" + ts);
       lstm_unit_param->add_top("c_" + ts);
