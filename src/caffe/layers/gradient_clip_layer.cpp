@@ -39,7 +39,7 @@ void GradientClipLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
       Dtype sumsq_i = 0;
       for (int j = 0; j < startVolume; ++j) {
         for (int k = 0; k < endVolume; ++k) {
-          const int index = i * endVolume + j * endVolume * numBatch + k;
+          const int index = i * endVolume + j * (endVolume * numBatch) + k;
           sumsq_i += top_diff[index] * top_diff[index];
         }
       }
@@ -48,7 +48,7 @@ void GradientClipLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
         const Dtype scale_factor = gradient_clip / norm;
         for (int j = 0; j < startVolume; ++j) {
           for (int k = 0; k < endVolume; ++k) {
-            const int index = i * endVolume + j * endVolume * numBatch + k;
+            const int index = i * endVolume + j * (endVolume * numBatch) + k;
             bottom_diff[index] = scale_factor * top_diff[index];
           }
         }

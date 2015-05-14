@@ -730,6 +730,8 @@ message RecurrentParameter {
 
   // Whether to enable displaying debug_info in the unrolled recurrent net.
   optional bool debug_info = 4 [default = false];
+
+  optional float gradient_clip = 5 [default = 5.0]; // the amount to clip gradients by
 }
 
 // Message that stores parameters used by RNN Layer

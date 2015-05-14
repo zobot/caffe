@@ -12,4 +12,4 @@ momentum: 0.9
 weight_decay: 0.005
 snapshot: 4000
 snapshot_prefix: "matnet7"
-solver_mode: GPU
+solver_mode: CPU

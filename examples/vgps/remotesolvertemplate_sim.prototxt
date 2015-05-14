@@ -8,4 +8,4 @@ display: 100
 momentum: 0.9
 weight_decay: 0.005
 snapshot: 4000
-solver_mode: GPU
+solver_mode: CPU

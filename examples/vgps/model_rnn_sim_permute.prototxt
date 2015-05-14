@@ -1,0 +1,254 @@
+layer {
+  name: "data_in"
+  type: "MemoryData"
+  top: "joint_input"
+  top: "action_input"
+  top: "prec_input"
+  top: "clip"
+  memory_data_param {
+    input_shapes {
+      dim: 1000 # 10 sequences of 100
+      dim: 1
+      dim: 26
+      dim: 1
+    }
+    input_shapes {
+      dim: 1000
+      dim: 7
+      dim: 1
+      dim: 1
+    }
+    input_shapes {
+      dim: 1000
+      dim: 7
+      dim: 7
+      dim: 1
+    }
+    input_shapes {
+      dim: 1000
+      dim: 1
+      dim: 1
+      dim: 1
+    }
+  }
+  include: {phase: TRAIN}
+}
+
+layer {
+  name: "data_in"
+  type: "MemoryData"
+  top: "joint_input"
+  top: "clip"
+  memory_data_param {
+    input_shapes {
+      dim: 1
+      dim: 1
+      dim: 26
+      dim: 1
+    }
+    input_shapes {
+      dim: 1
+      dim: 1
+      dim: 1
+      dim: 1
+    }
+  }
+  include: {phase: TEST}
+}
+
+layer {
+  name: "reshapeclip"
+  type: "Reshape"
+  bottom: "clip"
+  top: "clip_reshape"
+  reshape_param {
+    shape {
+      dim: 10
+      dim: 100
+    }
+  }
+  include: {phase: TRAIN}
+}
+
+layer {
+  name: "reshapeclip"
+  type: "Reshape"
+  bottom: "clip"
+  top: "clip_reshape"
+  reshape_param {
+    shape {
+      dim: 1
+      dim: 1
+    }
+  }
+  include: {phase: TEST}
+}
+
+layer { 
+  name: 'permuteclip'
+  type: 'Permute'
+  bottom: 'clip_reshape'
+  top: 'clip_permute'
+}
+
+layer {
+  name: "fc1"
+  type: "InnerProduct"
+  bottom: "joint_input"
+  top: "fc1"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 40
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+layer {
+  name: "relu2"
+  type: "ReLU"
+  bottom: "fc1"
+  top: "fc1"
+}
+
+layer {
+  name: "reshapefc"
+  type: "Reshape"
+  bottom: "fc1"
+  top: "fc1_reshape"
+  reshape_param {
+    shape {
+      dim: 10
+      dim: 100
+      dim: 40
+    }
+  }
+  include: {phase: TRAIN}
+}
+
+layer {
+  name: "reshapefc"
+  type: "Reshape"
+  bottom: "fc1"
+  top: "fc1_reshape"
+  reshape_param {
+    shape {
+      dim: 1
+      dim: 1
+      dim: 40
+    }
+  }
+  include: {phase: TEST}
+}
+
+layer { 
+  name: 'permutefc1'
+  type: 'Permute'
+  bottom: 'fc1_reshape'
+  top: 'fc1_permute'
+}
+
+layer {
+  name: "rnn1"
+  type: "LSTM"
+  bottom: "fc1_permute"
+  bottom: "clip_permute"
+  top: "rnn1"
+  recurrent_param {
+    num_output: 20
+    weight_filler {
+      type: "uniform"
+      min: -0.08
+      max: 0.08
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+    gradient_clip: 5.0
+  }
+}
+
+layer { 
+  name: 'permuternn'
+  type: 'Permute'
+  bottom: 'rnn1'
+  top: 'rnn1_permute'
+}
+
+layer {
+  name: "reshapernn"
+  type: "Reshape"
+  bottom: "rnn1_permute"
+  top: "rnn1_reshape"
+  reshape_param {
+    shape {
+      dim: 1000
+      dim: 20
+    }
+  }
+  include: {phase: TRAIN}
+}
+
+layer {
+  name: "reshapernn"
+  type: "Reshape"
+  bottom: "rnn1_permute"
+  top: "rnn1_reshape"
+  reshape_param {
+    shape {
+      dim: 1
+      dim: 20
+    }
+  }
+  include: {phase: TEST}
+}
+
+layer {
+  name: "fc3"
+  type: "InnerProduct"
+  bottom: "rnn1_reshape"
+  top: "nn_output"
+  param {
+    lr_mult: 1
+    decay_mult: 1
+  }
+  param {
+    lr_mult: 2
+    decay_mult: 0
+  }
+  inner_product_param {
+    num_output: 7
+    weight_filler {
+      type: "gaussian"
+      std: 0.01
+    }
+    bias_filler {
+      type: "constant"
+      value: 0
+    }
+  }
+}
+
+layer {
+  name: "loss"
+  type: "WeightedEuclideanLoss"
+  bottom: "nn_output"
+  bottom: "action_input"
+  bottom: "prec_input"
+  top: "euclidean_error"
+  include: {phase: TRAIN}
+}
+

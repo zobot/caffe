@@ -66,9 +66,10 @@ void LSTMLayer<Dtype>::FillUnrolledNet(NetParameter* net_param) const {
   LayerParameter split_param;
   split_param.set_type("Split");
 
+  const Dtype gradient_clip = this->layer_param_.recurrent_param().gradient_clip();
   LayerParameter clip_param;
   clip_param.set_type("GradientClip");
-  clip_param.mutable_gradient_clip_param()->set_gradient_clip(5.0);
+  clip_param.mutable_gradient_clip_param()->set_gradient_clip(gradient_clip);
   clip_param.mutable_gradient_clip_param()->set_batch_axis(1);
 
   BlobShape input_shape;
