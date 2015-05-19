@@ -162,22 +162,25 @@ layer {
 
 layer {
   name: "rnn1"
-  type: "LSTM"
+  type: "RNN"
   bottom: "fc1_permute"
   bottom: "clip_permute"
   top: "rnn1"
   recurrent_param {
-    num_output: 20
+    num_output: 40
     weight_filler {
-      type: "uniform"
-      min: -0.08
-      max: 0.08
+      type: "constant"
+      value: 0
     }
     bias_filler {
       type: "constant"
       value: 0
     }
-    gradient_clip: 0.0
+    gradient_clip: 5.0
+  }
+  rnn_param {
+    output_nonlinearity: "ReLU"
+    recurrent_nonlinearity: "ReLU"
   }
 }
 
@@ -196,7 +199,7 @@ layer {
   reshape_param {
     shape {
       dim: 1000
-      dim: 20
+      dim: 40
     }
   }
   include: {phase: TRAIN}
@@ -210,7 +213,7 @@ layer {
   reshape_param {
     shape {
       dim: 1
-      dim: 20
+      dim: 40
     }
   }
   include: {phase: TEST}

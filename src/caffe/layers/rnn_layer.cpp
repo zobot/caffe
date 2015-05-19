@@ -63,6 +63,12 @@ void RNNLayer<Dtype>::FillUnrolledNet(NetParameter* net_param) const {
   LayerParameter recurrent_nonlinearity_param;
   recurrent_nonlinearity_param.set_type(this->layer_param_.rnn_param().recurrent_nonlinearity());
 
+  const Dtype gradient_clip = this->layer_param_.recurrent_param().gradient_clip();
+  LayerParameter clip_param;
+  clip_param.set_type("GradientClip");
+  clip_param.mutable_gradient_clip_param()->set_gradient_clip(gradient_clip);
+  clip_param.mutable_gradient_clip_param()->set_batch_axis(1);
+
   LayerParameter slice_param;
   slice_param.set_type("Slice");
   slice_param.mutable_slice_param()->set_axis(0);
@@ -134,6 +140,16 @@ void RNNLayer<Dtype>::FillUnrolledNet(NetParameter* net_param) const {
     cont_slice_param->add_top("cont_" + ts);
     x_slice_param->add_top("W_xh_x_" + ts);
 
+    // Add layers to clip the gradients flowing through the 
+    // recurrent layers (h and c).
+    {
+      LayerParameter* clip_h_param = net_param->add_layer();
+      clip_h_param->CopyFrom(clip_param);
+      clip_h_param->set_name("h_clipped_" + tm1s);
+      clip_h_param->add_bottom("h_" + tm1s);
+      clip_h_param->add_top("h_clipped_" + tm1s);
+    }
+
     // Add layer to flush the hidden state when beginning a new sequence,
     // as indicated by cont_t.
     //     h_conted_{t-1} := cont_t * h_{t-1}
@@ -146,7 +162,7 @@ void RNNLayer<Dtype>::FillUnrolledNet(NetParameter* net_param) const {
       cont_h_param->CopyFrom(sum_param);
       cont_h_param->mutable_eltwise_param()->set_coeff_blob(true);
       cont_h_param->set_name("h_conted_" + tm1s);
-      cont_h_param->add_bottom("h_" + tm1s);
+      cont_h_param->add_bottom("h_clipped_" + tm1s);
       cont_h_param->add_bottom("cont_" + ts);
       cont_h_param->add_top("h_conted_" + tm1s);
     }

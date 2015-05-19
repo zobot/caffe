@@ -45,7 +45,9 @@ void GradientClipLayer<Dtype>::Backward_cpu(const vector<Blob<Dtype>*>& top,
       }
       const Dtype norm = std::sqrt(sumsq_i);
       if (norm > gradient_clip) {
-        const Dtype scale_factor = gradient_clip / norm;
+        const Dtype scale_factor = gradient_clip 
+            / (norm + std::numeric_limits<Dtype>::epsilon());
+        LOG(INFO) << "scaling, factor: " << scale_factor;
         for (int j = 0; j < startVolume; ++j) {
           for (int k = 0; k < endVolume; ++k) {
             const int index = i * endVolume + j * (endVolume * numBatch) + k;
