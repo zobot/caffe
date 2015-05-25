@@ -14,6 +14,8 @@
 #include "caffe/data_layers.hpp"
 #include "caffe/util/upgrade_proto.hpp"
 
+#include "caffe/sequence_layers.hpp"
+
 #define MEX_ARGS int nlhs, mxArray **plhs, int nrhs, const mxArray **prhs
 
 // Log and throw a Mex error
@@ -143,6 +145,74 @@ static void vgps_train(const mxArray* const bottom) {
   md_layer->Reset(inputs, num_samples);
   LOG(INFO) << "Starting Solve";
   solver_->Solve();
+}
+
+static mxArray* rsgps_linearize(const mxArray* const layer_name, const mxArray* const bottom) {
+  const mxArray* const rnn_name = mxGetCell(layer_name, 0);
+  char* rnn_name_string = mxArrayToString(rnn_name);
+  vector<float*> inputs;
+  int num_timesteps;
+  int num_samples;
+
+  for (int i = 0; i < mxGetNumberOfElements(bottom); ++i) {
+    mxArray* const data = mxGetCell(bottom, i);
+    float* const data_ptr = reinterpret_cast<float* const>(mxGetPr(data));
+    CHECK(mxIsSingle(data)) << "MatCaffe require single-precision float point data";
+    inputs.push_back(data_ptr);
+
+    // Only need to figure out the number of samples once.
+    if (i == 0) {
+      const int num_dim = mxGetNumberOfDimensions(data);
+      num_timesteps = mxGetDimensions(data)[num_dim-1]; // dimensions reversed...
+      num_samples = mxGetDimensions(data)[num_dim-2]; // dimensions reversed...
+      if (num_samples != 1) {
+        LOG(ERROR) << "num_samples should be 1 for linearization. num_samples: " << num_samples;
+      }
+    }
+  }
+
+  vector<Blob<float>*> output_blobs = LinearizeSequence<float>(net_, string(rnn_name_string),
+          inputs, num_timesteps);
+
+  mxArray* mx_out = mxCreateCellMatrix(1, 2);
+  LOG(INFO) << "Initializing mex arrays.";
+  for (int k = 0; k < 2; k++) {
+
+    stringstream output_jac_shape_stringstream;
+    const vector<int> output_jac_shape = output_blobs[k]->shape();
+    output_jac_shape_stringstream << "output_jac_shape: ";
+    for (int i = 0; i < output_jac_shape.size(); i++){
+        output_jac_shape_stringstream << output_jac_shape[i];
+        if (i < output_jac_shape.size() - 1){
+            output_jac_shape_stringstream << ", ";
+        }
+    }
+    string output_jac_shape_string = output_jac_shape_stringstream.str();
+    LOG(INFO) << output_jac_shape_string;
+    mwSize dims[4] = {output_blobs[k]->width(), output_blobs[k]->height(),
+      output_blobs[k]->channels(), output_blobs[k]->num()};
+    mxArray* mx_blob =  mxCreateNumericArray(4, dims, mxSINGLE_CLASS, mxREAL);
+    mxSetCell(mx_out, k, mx_blob);
+    float* data_ptr = reinterpret_cast<float*>(mxGetPr(mx_blob));
+  
+    LOG(INFO) << "Copying into mex arrays.";
+    switch (Caffe::mode()) {
+    case Caffe::CPU:
+      LOG(INFO) << "CPU Mode";
+      caffe_copy(output_blobs[k]->count(), output_blobs[k]->cpu_data(),
+          data_ptr);
+      break;
+    case Caffe::GPU:
+      LOG(INFO) << "GPU Mode";
+      caffe_copy(output_blobs[k]->count(), output_blobs[k]->gpu_data(),
+          data_ptr);
+      break;
+    default:
+      mex_error("Unknown Caffe mode.");
+    }  // switch (Caffe::mode())
+  }
+  LOG(INFO) << "Finished copy";
+  return mx_out;
 }
 
 // Input is a cell array of 4 4-D arrays containing image and joint info
@@ -666,6 +736,7 @@ static void init_test_batch(MEX_ARGS) {
     }
   }
   NetState* net_state = net_param.mutable_state();
+  net_param.set_force_backward(true);
   net_state->set_phase(TEST);
   net_.reset(new Net<float>(net_param));
 
@@ -835,6 +906,16 @@ static void forward(MEX_ARGS) {
 }
 */
 
+static void rsgps_linearize(MEX_ARGS) {
+  int req_nrhs = 2;
+  if (nrhs != req_nrhs) {
+    LOG(ERROR) << "Only given " << nrhs << " arguments, should be " << req_nrhs;
+    mexErrMsgTxt("Wrong number of arguments");
+  }
+  plhs[0] = rsgps_linearize(prhs[0], prhs[1]);
+
+}
+
 static void vgps_forward(MEX_ARGS) {
   if (nrhs != 1) {
     LOG(ERROR) << "Only given " << nrhs << " arguments";
@@ -933,6 +1014,7 @@ static handler_registry handlers[] = {
   { "init_forwarda_batch",init_forwarda_batch},
   { "init_train",         init_train      },
   { "is_initialized",     is_initialized  },
+  { "linearize",          rsgps_linearize },
   { "set_mode_cpu",       set_mode_cpu    },
   { "set_mode_gpu",       set_mode_gpu    },
   { "set_device",         set_device      },

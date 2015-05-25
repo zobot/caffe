@@ -8,6 +8,7 @@
 #include "caffe/blob.hpp"
 #include "caffe/common.hpp"
 #include "caffe/layer.hpp"
+#include "caffe/data_layers.hpp"
 #include "caffe/net.hpp"
 #include "caffe/proto/caffe.pb.h"
 
@@ -41,6 +42,8 @@ class RecurrentLayer : public Layer<Dtype> {
     // Can't propagate to sequence continuation indicators.
     return bottom_index != 1;
   }
+
+  virtual inline shared_ptr<Net<Dtype> > UnrolledNet(){ return unrolled_net_; }
 
  protected:
   /**
@@ -306,6 +309,225 @@ class RNNLayer : public RecurrentLayer<Dtype> {
   virtual void RecurrentOutputBlobNames(vector<string>* names) const;
   virtual void OutputBlobNames(vector<string>* names) const;
 };
+
+template <typename Dtype>
+vector<Blob<Dtype>*> LinearizeSequence(shared_ptr<Net<Dtype> > in_net, const string name, 
+        const vector<Dtype*>& inputs, const int num_timesteps){
+  LOG(INFO) << "Layer name: " << name;
+  LOG(INFO) << "String size: " << name.length();
+  LOG(INFO) << "Net name: " << in_net->name();
+  vector<string> layer_names = in_net->layer_names();
+  LOG(INFO) << "Net layers: ";
+  int sequence_index = -1;
+  for (int i = 0; i < layer_names.size(); i++){
+    if (layer_names[i] == name){
+      sequence_index = i;
+    }
+    LOG(INFO) << layer_names[i];
+  }
+  LOG(INFO) << "Sequence Layer found at index: " << sequence_index;
+  shared_ptr<Layer<Dtype> > sequence_layer = in_net->layers()[sequence_index];
+
+  vector<string> input_blob_names = in_net->blob_names();
+  LOG(INFO) << "Input Net blobs: ";
+  int x_index = -1;
+  for (int i = 0; i < input_blob_names.size(); i++){
+    if (input_blob_names[i] == "joint_input"){
+      x_index = i;
+    }
+    LOG(INFO) << input_blob_names[i];
+  }
+  LOG(INFO) << "x blob found at index: " << x_index;
+
+  shared_ptr<LSTMLayer<Dtype> > lstm_layer = boost::dynamic_pointer_cast<LSTMLayer<Dtype> >(sequence_layer);
+
+  shared_ptr<Net<Dtype> > lstm_net = lstm_layer->UnrolledNet();
+  vector<string> unrolled_layer_names = lstm_net->layer_names();
+  LOG(INFO) << "Unrolled Net layers: ";
+  int hidden_layer_index = -1;
+  for (int i = 0; i < unrolled_layer_names.size(); i++){
+    if (unrolled_layer_names[i] == "rnn1_unit_1"){
+      hidden_layer_index = i;
+    }
+    LOG(INFO) << unrolled_layer_names[i];
+  }
+  LOG(INFO) << "Hidden Layer found at index: " << hidden_layer_index;
+
+  vector<string> unrolled_blob_names = lstm_net->blob_names();
+  LOG(INFO) << "Unrolled Net blobs: ";
+  int c_0_index = -1;
+  int c_1_index = -1;
+  int h_1_index = -1;
+  for (int i = 0; i < unrolled_blob_names.size(); i++){
+    if (unrolled_blob_names[i] == "c_0"){
+      c_0_index = i;
+    }
+    if (unrolled_blob_names[i] == "c_1"){
+      c_1_index = i;
+    }
+    if (unrolled_blob_names[i] == "h_1"){
+      h_1_index = i;
+    }
+    LOG(INFO) << unrolled_blob_names[i];
+  }
+
+  LOG(INFO) << "c_0 blob found at index: " << c_0_index;
+  LOG(INFO) << "c_1 blob found at index: " << c_1_index;
+  LOG(INFO) << "h_1 blob found at index: " << h_1_index;
+
+  vector<shared_ptr<Blob<Dtype> > > sequence_net_blobs = lstm_net->blobs();
+
+  const vector<int>& c_0_shape = sequence_net_blobs[c_0_index]->shape();
+  const vector<int>& c_1_shape = sequence_net_blobs[c_1_index]->shape();
+
+  stringstream c_0_shape_stringstream;
+  c_0_shape_stringstream << "c_0_shape: ";
+  for (int i = 0; i < c_0_shape.size(); i++){
+      c_0_shape_stringstream << c_0_shape[i];
+      if (i < c_0_shape.size() - 1){
+        c_0_shape_stringstream << ", ";
+      }
+  }
+  string c_0_shape_string = c_0_shape_stringstream.str();
+  LOG(INFO) << c_0_shape_string;
+
+  stringstream c_1_shape_stringstream;
+  c_1_shape_stringstream << "c_1_shape: ";
+  for (int i = 0; i < c_1_shape.size(); i++){
+      c_1_shape_stringstream << c_1_shape[i];
+      if (i < c_1_shape.size() - 1){
+        c_1_shape_stringstream << ", ";
+      }
+  }
+  string c_1_shape_string = c_1_shape_stringstream.str();
+  LOG(INFO) << c_1_shape_string;
+
+  // TODO: make this agnostic to data layer and float as Dtype
+  shared_ptr<MemoryDataLayer<float> > md_layer =
+    boost::dynamic_pointer_cast<MemoryDataLayer<float> >(in_net->layers()[0]);
+
+  float initial_loss;
+  Dtype* input_data = in_net->blobs()[0]->mutable_cpu_data();
+  Dtype* c_1_diff = sequence_net_blobs[c_1_index]->mutable_cpu_diff();
+  Dtype* h_1_diff = sequence_net_blobs[h_1_index]->mutable_cpu_diff();
+
+  const int x_dim = in_net->blobs()[x_index]->shape()[2];
+  const int state_dim = c_0_shape[2];
+
+  LOG(INFO) << "x dim: " << x_dim;
+  LOG(INFO) << "Hidden state dim: " << state_dim;
+  vector<Dtype*> inputs_timestep;
+  inputs_timestep.push_back(inputs[0]);
+  inputs_timestep.push_back(inputs[1]);
+
+  Blob<Dtype>* x_jac_blob = new Blob<Dtype>(num_timesteps, state_dim, x_dim, 1);
+  Dtype* x_jac_blob_data = x_jac_blob->mutable_cpu_data();
+
+  Blob<Dtype>* hidden_jac_blob = new Blob<Dtype>(num_timesteps, state_dim, state_dim, 1);
+  Dtype* hidden_jac_blob_data = hidden_jac_blob->mutable_cpu_data();
+
+  for (int t = 0; t < num_timesteps; t++) {
+    inputs_timestep[0] = inputs[0] + x_dim * t;
+    inputs_timestep[1] = inputs[1] + t; // one clip per iteration
+
+    //LOG(INFO) << inputs_timestep[0].size();
+
+    md_layer->Reset(inputs_timestep, 1);
+    //LOG(INFO) << "Forward for step: " << t;
+    in_net->ForwardPrefilled();
+    for (int i = 0; i < state_dim; i++) {
+      for (int j = 0; j < state_dim; j++) {
+        if (i != j) {
+          c_1_diff[j] = 0.0;
+        }
+        else {
+          LOG(INFO) << "Setting c_1_diff[" << j << "] = 1.0";
+          c_1_diff[j] = 1.0;
+        }
+      }
+
+      for (int j = 0; j < state_dim; j++) {
+        h_1_diff[j] = 0.0;
+      }
+
+      //LOG(INFO) << "Backward for step: " << t << " for index: " << i;
+      lstm_net->BackwardFrom(hidden_layer_index);
+      in_net->BackwardFrom(sequence_index - 1);
+
+      const Dtype* input_diff = in_net->blobs()[x_index]->cpu_diff();
+      const Dtype* c_0_diff = sequence_net_blobs[c_0_index]->cpu_diff();
+
+      const int x_offset = t * state_dim * x_dim + i * x_dim;
+      const int hidden_offset = t * state_dim * state_dim + i * state_dim;
+      for (int j = 0; j < x_dim; j++) {
+          x_jac_blob_data[x_offset + j] = input_diff[j];
+      }
+
+      for (int j = 0; j < state_dim; j++) {
+          hidden_jac_blob_data[hidden_offset + j] = c_0_diff[j];
+      }
+      //caffe_copy(x_dim, input_diff, x_jac_blob->mutable_cpu_data() + x_offset);
+      //caffe_copy(state_dim, c_0_diff, hidden_jac_blob->mutable_cpu_data() + hidden_offset);
+    }
+  }
+  //const vector<Blob<float>*>& output_blobs = net_->ForwardPrefilled(&initial_loss);
+  
+  stringstream x_jac_shape_stringstream;
+  const vector<int> x_jac_shape = x_jac_blob->shape();
+  x_jac_shape_stringstream << "x_jac_shape: ";
+  for (int i = 0; i < x_jac_shape.size(); i++){
+      x_jac_shape_stringstream << x_jac_shape[i];
+      if (i < x_jac_shape.size() - 1){
+        x_jac_shape_stringstream << ", ";
+      }
+  }
+  string x_jac_shape_string = x_jac_shape_stringstream.str();
+  LOG(INFO) << x_jac_shape_string;
+
+  stringstream hidden_jac_shape_stringstream;
+  const vector<int> hidden_jac_shape = hidden_jac_blob->shape();
+  hidden_jac_shape_stringstream << "hidden_jac_shape: ";
+  for (int i = 0; i < hidden_jac_shape.size(); i++){
+      hidden_jac_shape_stringstream << hidden_jac_shape[i];
+      if (i < hidden_jac_shape.size() - 1){
+        hidden_jac_shape_stringstream << ", ";
+      }
+  }
+  string hidden_jac_shape_string = hidden_jac_shape_stringstream.str();
+  LOG(INFO) << hidden_jac_shape_string;
+
+  stringstream hidden_jac_stringstream;
+  const Dtype* hidden_jac = hidden_jac_blob->cpu_data();
+  hidden_jac_stringstream << "hidden_jac: ";
+  for (int i = 0; i < hidden_jac_blob->count(); i++){
+      hidden_jac_stringstream << hidden_jac[i];
+      if (i < hidden_jac_blob->count() - 1){
+        hidden_jac_stringstream << ", ";
+      }
+  }
+  string hidden_jac_string = hidden_jac_stringstream.str();
+  LOG(INFO) << hidden_jac_string;
+
+  LOG(INFO) << "last hidden jac: " << hidden_jac[hidden_jac_blob->count() - 1];
+  //LOG(INFO) << "last hidden jac plus 1: " << hidden_jac[hidden_jac_blob->count()];
+  //
+  stringstream x_jac_stringstream;
+  const Dtype* x_jac = x_jac_blob->cpu_data();
+  x_jac_stringstream << "x_jac: ";
+  for (int i = 0; i < x_jac_blob->count(); i++){
+      x_jac_stringstream << x_jac[i];
+      if (i < x_jac_blob->count() - 1){
+        x_jac_stringstream << ", ";
+      }
+  }
+  string x_jac_string = x_jac_stringstream.str();
+  LOG(INFO) << x_jac_string;
+
+  vector<Blob<Dtype>*> ret_vec;
+  ret_vec.push_back(x_jac_blob);
+  ret_vec.push_back(hidden_jac_blob);
+  return ret_vec;
+}
 
 }  // namespace caffe
 
