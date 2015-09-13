@@ -147,7 +147,7 @@ static void vgps_train(const mxArray* const bottom) {
   solver_->Solve();
 }
 
-static mxArray* rsgps_linearize(const mxArray* const layer_name, const mxArray* const bottom) {
+/*static mxArray* rsgps_linearize(const mxArray* const layer_name, const mxArray* const bottom) {
   const mxArray* const rnn_name = mxGetCell(layer_name, 0);
   char* rnn_name_string = mxArrayToString(rnn_name);
   vector<float*> inputs;
@@ -214,6 +214,7 @@ static mxArray* rsgps_linearize(const mxArray* const layer_name, const mxArray* 
   LOG(INFO) << "Finished copy";
   return mx_out;
 }
+*/
 
 // Input is a cell array of 4 4-D arrays containing image and joint info
 static mxArray* vgps_forward(const mxArray* const bottom) {
@@ -906,6 +907,7 @@ static void forward(MEX_ARGS) {
 }
 */
 
+/*
 static void rsgps_linearize(MEX_ARGS) {
   int req_nrhs = 2;
   if (nrhs != req_nrhs) {
@@ -915,6 +917,7 @@ static void rsgps_linearize(MEX_ARGS) {
   plhs[0] = rsgps_linearize(prhs[0], prhs[1]);
 
 }
+*/
 
 static void vgps_forward(MEX_ARGS) {
   if (nrhs != 1) {
@@ -1014,7 +1017,7 @@ static handler_registry handlers[] = {
   { "init_forwarda_batch",init_forwarda_batch},
   { "init_train",         init_train      },
   { "is_initialized",     is_initialized  },
-  { "linearize",          rsgps_linearize },
+  //{ "linearize",          rsgps_linearize },
   { "set_mode_cpu",       set_mode_cpu    },
   { "set_mode_gpu",       set_mode_gpu    },
   { "set_device",         set_device      },
